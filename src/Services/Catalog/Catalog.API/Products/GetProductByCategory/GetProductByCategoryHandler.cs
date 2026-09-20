@@ -1,4 +1,3 @@
-﻿
 namespace Catalog.API.Products.GetProductByCategory;
 
 public record GetProductByCategoryQuery(string Category) : IQuery<GetProductByCategoryResult>;
@@ -11,7 +10,7 @@ internal class GetProductByCategoryQueryHandler
     public async Task<GetProductByCategoryResult> Handle(GetProductByCategoryQuery query, CancellationToken cancellationToken)
     {
         var products = await session.Query<Product>()
-            .Where(p => p.Category.Contains(query.Category))
+            .Where(p => p.ProductType == query.Category || p.Tags.Contains(query.Category))
             .ToListAsync(cancellationToken);
 
         return new GetProductByCategoryResult(products);

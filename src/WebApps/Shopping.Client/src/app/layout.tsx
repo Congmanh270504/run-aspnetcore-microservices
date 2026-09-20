@@ -26,11 +26,7 @@ export default function RootLayout({
                 <body
                     className={`${inter.className} min-h-screen flex flex-col bg-background text-foreground antialiased`}
                 >
-                    <CartProvider>
-                        <Header />
-                        <main className="flex-1">{children}</main>
-                        <Footer />
-                    </CartProvider>
+                    {children}
                 </body>
             </html>
         </ClerkProvider>

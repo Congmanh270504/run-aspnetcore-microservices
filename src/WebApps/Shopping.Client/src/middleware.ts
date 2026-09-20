@@ -2,15 +2,22 @@ import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // Clerk middleware initializes authentication state for all matched routes
 // Route protection is handled in layouts and pages per Clerk best practices
-export default clerkMiddleware((auth, req) => {
-    const authObj = auth();
-    console.log(
-        ">> [Middleware]",
-        req.nextUrl.pathname,
-        "userId:",
-        authObj?.userId,
-    );
-});
+export default clerkMiddleware(
+    (auth, req) => {
+        const authObj = auth();
+        // console.log(
+        //     ">> [Middleware]",
+        //     req.nextUrl.pathname,
+        //     "userId:",
+        //     authObj?.userId,
+        //     "hasSecret:",
+        //     !!process.env.CLERK_SECRET_KEY,
+        //     "cookies:",
+        //     req.cookies.getAll().map((c) => c.name),
+        // );
+    },
+    // { debug: true },
+);
 
 export const config = {
     matcher: [
