@@ -10,8 +10,16 @@ public class CatalogInitialData : IInitialData
     {
         using var session = store.LightweightSession();
 
-        if (await session.Query<Product>().AnyAsync(token: cancellation))
+        var existingProducts = await session.Query<Product>().ToListAsync(token: cancellation);
+        if (existingProducts.Count >= 30 && existingProducts.All(p => !string.IsNullOrEmpty(p.Title)))
             return;
+
+        // Remove old dummy products if any exist (e.g. products without Title)
+        var oldDummyProducts = existingProducts.Where(p => string.IsNullOrEmpty(p.Title)).ToList();
+        foreach (var old in oldDummyProducts)
+        {
+            session.Delete(old);
+        }
 
         var products = GetPreconfiguredProducts();
         if (products.Any())

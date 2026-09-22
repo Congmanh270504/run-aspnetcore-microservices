@@ -81,32 +81,36 @@ public class Product
     [JsonPropertyName("options")]
     public List<ProductOption> Options { get; set; } = new();
 
-    // Convenience properties for backward compatibility
-    [JsonIgnore]
+    // Convenience properties for backward and frontend compatibility
+    [JsonPropertyName("name")]
     public string Name
     {
         get => Title;
         set => Title = value;
     }
 
-    [JsonIgnore]
+    [JsonPropertyName("description")]
     public string? Description
     {
         get => BodyHtml;
         set => BodyHtml = value;
     }
 
-    [JsonIgnore]
+    [JsonPropertyName("category")]
     public List<string> Category
     {
-        get => Tags;
+        get => Tags.Count > 0 ? Tags : (string.IsNullOrEmpty(ProductType) ? new() : new List<string> { ProductType });
         set => Tags = value;
     }
 
-    [JsonIgnore]
-    public string? ImageFile => Images.FirstOrDefault()?.Src;
+    [JsonPropertyName("imageFile")]
+    public string? ImageFile
+    {
+        get => Images.FirstOrDefault()?.Src ?? string.Empty;
+        set { }
+    }
 
-    [JsonIgnore]
+    [JsonPropertyName("price")]
     public decimal Price
     {
         get
@@ -119,6 +123,7 @@ public class Product
             }
             return 0m;
         }
+        set { }
     }
 }
 

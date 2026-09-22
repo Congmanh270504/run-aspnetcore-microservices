@@ -15,29 +15,33 @@ export default async function AdminLayout({
 }: {
     children: React.ReactNode;
 }) {
+    const { userId, sessionClaims } = await auth();
     const user = await currentUser();
 
     // If user is not logged in, redirect to sign-in page with redirect_url
-    if (!user) {
+    if (!userId && !user) {
         redirect("/sign-in?redirect_url=/admin");
     }
 
     // Check admin role from sessionClaims (token) or user.publicMetadata
-    const isAdmin = user?.publicMetadata?.role === "admin";
+    const role =
+        (sessionClaims?.metadata?.role as string) ||
+        (user?.publicMetadata?.role as string);
+    const isAdmin = role === "admin";
 
     // Plain user object for Client Components (RSC boundary requires plain objects, not class instances)
     const userProfile = {
-        id: user.id,
+        id: userId || user?.id || "",
         fullName:
-            user.fullName ||
-            `${user.firstName ?? ""} ${user.lastName ?? ""}`.trim() ||
+            user?.fullName ||
+            `${user?.firstName ?? ""} ${user?.lastName ?? ""}`.trim() ||
             "Admin",
         email:
-            user.primaryEmailAddress?.emailAddress ||
-            user.emailAddresses?.[0]?.emailAddress ||
+            user?.primaryEmailAddress?.emailAddress ||
+            user?.emailAddresses?.[0]?.emailAddress ||
             "",
-        imageUrl: user.imageUrl,
-        role: (user.publicMetadata?.role as string) || "customer",
+        imageUrl: user?.imageUrl || "",
+        role: role || "customer",
     };
 
     // If user is not admin, show friendly Access Denied UI

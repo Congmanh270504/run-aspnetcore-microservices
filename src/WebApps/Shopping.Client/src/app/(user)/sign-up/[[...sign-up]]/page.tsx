@@ -1,34 +1,43 @@
 import { SignUp } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
+import { redirect } from "next/navigation";
 
-export default function SignUpPage({
-  searchParams,
+export default async function SignUpPage({
+    searchParams,
 }: {
-  searchParams?: { redirect_url?: string };
+    searchParams?: { redirect_url?: string };
 }) {
-  let redirectUrl = "/";
+    const { userId } = await auth();
 
-  if (searchParams?.redirect_url) {
-    const raw = searchParams.redirect_url;
-    try {
-      if (raw.startsWith("http://") || raw.startsWith("https://")) {
-        const parsed = new URL(raw);
-        redirectUrl = parsed.pathname + parsed.search;
-      } else if (raw.startsWith("/")) {
-        redirectUrl = raw;
-      }
-    } catch {
-      redirectUrl = "/";
+    let redirectUrl = "/";
+
+    if (searchParams?.redirect_url) {
+        const raw = searchParams.redirect_url;
+        try {
+            if (raw.startsWith("http://") || raw.startsWith("https://")) {
+                const parsed = new URL(raw);
+                redirectUrl = parsed.pathname + parsed.search;
+            } else if (raw.startsWith("/")) {
+                redirectUrl = raw;
+            }
+        } catch {
+            redirectUrl = "/";
+        }
     }
-  }
 
-  return (
-    <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
-      <SignUp
-        routing="path"
-        path="/sign-up"
-        fallbackRedirectUrl={redirectUrl}
-      />
-    </div>
-  );
+    // If already authenticated on server, redirect immediately to target URL
+    if (userId) {
+        redirect(redirectUrl);
+    }
+
+    return (
+        <div className="flex min-h-[calc(100vh-4rem)] items-center justify-center py-12 px-4">
+            <SignUp
+                routing="path"
+                path="/sign-up"
+                fallbackRedirectUrl={redirectUrl}
+                forceRedirectUrl={redirectUrl}
+            />
+        </div>
+    );
 }
-

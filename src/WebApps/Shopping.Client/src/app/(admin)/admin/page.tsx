@@ -1,4 +1,7 @@
-import { getAllCategories, getProducts } from "@/actions/catalogActions";
+import {
+    getAllCategories,
+    getProducts,
+} from "@/features/products/actions/catalogActions";
 import { getOrders } from "@/actions/orderActions";
 import { ChartAreaInteractive } from "@/components/admin/chart-area-interactive";
 import { DataTable } from "@/components/admin/data-table";
@@ -14,7 +17,6 @@ import {
     ShoppingCart,
 } from "lucide-react";
 import Link from "next/link";
-import data from "./data.json";
 
 export const revalidate = 0;
 

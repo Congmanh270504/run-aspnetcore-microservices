@@ -1,25 +1,29 @@
-import { auth } from "@clerk/nextjs/server";
-import { redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import {
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from "@/components/ui/dialog";
 
-export default async function AdminDashboard() {
-    const { userId, sessionClaims } = await auth();
-
+export default function page() {
     return (
-        <div className="p-8">
-            <h1 className="text-xl font-bold mb-4">Clerk Server Test Page</h1>
-            <div className="space-y-2">
-                <p>
-                    <strong>User ID:</strong>{" "}
-                    {userId || "null (Not signed in on server)"}
-                </p>
-                <p>
-                    <strong>Role:</strong>{" "}
-                    {String(sessionClaims?.metadata?.role || "undefined")}
-                </p>
-                <pre className="bg-slate-100 p-4 rounded text-xs">
-                    {JSON.stringify(sessionClaims, null, 2)}
-                </pre>
-            </div>
-        </div>
+        <Dialog>
+            <DialogTrigger>Open</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Are you absolutely sure?</DialogTitle>
+                    <DialogDescription>
+                        This action cannot be undone. This will permanently
+                        delete your account and remove your data from our
+                        servers.
+                    </DialogDescription>
+                </DialogHeader>
+            </DialogContent>
+        </Dialog>
     );
 }

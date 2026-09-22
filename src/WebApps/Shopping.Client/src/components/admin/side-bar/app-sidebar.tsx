@@ -44,11 +44,6 @@ const data = {
             icon: LayoutDashboardIcon,
         },
         {
-            title: "Categories",
-            url: "/admin/categories",
-            icon: ListIcon,
-        },
-        {
             title: "Products",
             url: "/admin/products",
             icon: BarChartIcon,
