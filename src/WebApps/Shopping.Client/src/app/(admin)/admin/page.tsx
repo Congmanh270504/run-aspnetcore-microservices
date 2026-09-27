@@ -1,13 +1,10 @@
-import {
-    getAllCategories,
-    getProducts,
-} from "@/features/products/actions/catalogActions";
+
 import { getOrders } from "@/actions/orderActions";
 import { ChartAreaInteractive } from "@/components/admin/chart-area-interactive";
-import { DataTable } from "@/components/admin/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getAllCategories, getProducts } from "@/features/(admin)/products/actions/catalogActions";
 import {
     ArrowRight,
     DollarSign,

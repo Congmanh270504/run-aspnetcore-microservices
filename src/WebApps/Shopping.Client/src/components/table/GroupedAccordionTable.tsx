@@ -157,7 +157,7 @@ export function GroupedAccordionTable<TData, TValue>({
     groups,
     onRowClick,
     activeRowId,
-    emptyMessage = "Không có dữ liệu",
+    emptyMessage = "No data",
     tableHeaderClassName = "bg-gradient-to-r from-blue-50 to-yellow-50",
     rowClassName = "border-gray-100 odd:bg-white even:bg-blue-50",
     activeRowClassName = "bg-blue-100/70",
@@ -198,7 +198,7 @@ export function GroupedAccordionTable<TData, TValue>({
                                     variant="outline"
                                     className="border-sky-300/80 bg-linear-to-r from-cyan-100 via-sky-100 to-indigo-100 px-2.5 py-1 text-[11px] font-semibold text-sky-900"
                                 >
-                                    {group.items.length} dòng
+                                    {group.items.length} items
                                 </Badge>
                             </div>
                         </AccordionTrigger>

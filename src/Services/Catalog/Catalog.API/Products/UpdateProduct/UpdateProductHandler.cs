@@ -6,7 +6,7 @@ public record UpdateProductCommand(
     string Handle,
     string? BodyHtml,
     string? Vendor,
-    string ProductType,
+    ProductType? ProductType,
     List<string>? Tags = null,
     List<ProductVariant>? Variants = null,
     List<ProductImage>? Images = null,
@@ -23,7 +23,7 @@ public class UpdateProductCommandValidator : AbstractValidator<UpdateProductComm
         RuleFor(command => command.Title)
             .NotEmpty().WithMessage("Title is required")
             .Length(2, 250).WithMessage("Title must be between 2 and 250 characters");
-        RuleFor(command => command.ProductType).NotEmpty().WithMessage("ProductType is required");
+        RuleFor(command => command.ProductType).NotNull().WithMessage("ProductType is required");
     }
 }
 

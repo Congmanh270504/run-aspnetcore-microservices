@@ -16,6 +16,7 @@ import {
     ListIcon,
     SearchIcon,
     SettingsIcon,
+    TicketIcon,
     UsersIcon,
 } from "lucide-react";
 
@@ -40,13 +41,18 @@ const data = {
     navMain: [
         {
             title: "Dashboard",
-            url: "#",
+            url: "/admin",
             icon: LayoutDashboardIcon,
         },
         {
             title: "Products",
             url: "/admin/products",
             icon: BarChartIcon,
+        },
+        {
+            title: "Discounts",
+            url: "/admin/discounts",
+            icon: TicketIcon,
         },
         {
             title: "Projects",

@@ -1,3 +1,11 @@
+export interface ProductType {
+    id?: number;
+    name: string;
+    sort_order?: number;
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface Product {
     id: string;
     name: string;
@@ -12,7 +20,8 @@ export interface Product {
     created_at?: string;
     updated_at?: string;
     vendor?: string;
-    product_type?: string;
+    product_type?: string | ProductType;
+    productType?: ProductType | string;
     tags?: string[];
     variants?: any[];
     images?: any[];
@@ -117,14 +126,45 @@ export interface GetOrdersResponse {
     orders: PaginatedResult<Order>;
 }
 
+export interface ProductVariant {
+    id?: string;
+    title: string;
+    price: number;
+    grams?: number;
+    sku?: string;
+    option1?: string;
+    option2?: string;
+    available?: boolean;
+}
+
 export interface CreateProductData {
     name: string;
+    product_type?: string | ProductType;
+    productType?: string | ProductType;
     category: string[];
     description: string;
     imageFile: string;
     price: number;
+    variants?: ProductVariant[];
+    images?: string[];
 }
 
 export interface UpdateProductData extends CreateProductData {
     id: string;
 }
+
+export interface Coupon {
+    id: number;
+    productName: string;
+    description: string;
+    amount: number;
+    startDate?: string | null;
+    endDate?: string | null;
+    createdAt?: string | null;
+    updatedAt?: string | null;
+}
+
+export type CreateCouponData = Omit<Coupon, "id">;
+export type UpdateCouponData = Coupon;
+
+

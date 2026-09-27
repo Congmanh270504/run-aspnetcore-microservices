@@ -1,11 +1,10 @@
 import { ClerkProvider } from "@clerk/nextjs";
-import { shadcn } from "@clerk/ui/themes";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { CartProvider } from "@/context/CartContext";
+
+import { Toaster } from "@/components/ui/sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,13 +21,21 @@ export default function RootLayout({
 }) {
     return (
         <ClerkProvider>
-            <html lang="en">
+            <html lang="en" suppressHydrationWarning>
                 <body
                     className={`${inter.className} min-h-screen flex flex-col bg-background text-foreground antialiased`}
                 >
-                    {children}
+                    <ThemeProvider
+                        attribute="class"
+                        defaultTheme="light"
+                        enableSystem
+                    >
+                        {children}
+                        <Toaster richColors position="top-right" />
+                    </ThemeProvider>
                 </body>
             </html>
         </ClerkProvider>
     );
 }
+

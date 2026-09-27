@@ -5,7 +5,7 @@ public record CreateProductCommand(
     string Handle,
     string? BodyHtml,
     string? Vendor,
-    string ProductType,
+    ProductType? ProductType,
     List<string>? Tags = null,
     List<ProductVariant>? Variants = null,
     List<ProductImage>? Images = null,
@@ -19,7 +19,7 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
     public CreateProductCommandValidator()
     {
         RuleFor(x => x.Title).NotEmpty().WithMessage("Title is required");
-        RuleFor(x => x.ProductType).NotEmpty().WithMessage("ProductType is required");
+        RuleFor(x => x.ProductType).NotNull().WithMessage("ProductType is required");
     }
 }
 

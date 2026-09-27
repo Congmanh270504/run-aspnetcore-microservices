@@ -6,7 +6,7 @@ public record UpdateProductRequest(
     string Handle,
     string? BodyHtml,
     string? Vendor,
-    string ProductType,
+    ProductType? ProductType,
     List<string>? Tags = null,
     List<ProductVariant>? Variants = null,
     List<ProductImage>? Images = null,

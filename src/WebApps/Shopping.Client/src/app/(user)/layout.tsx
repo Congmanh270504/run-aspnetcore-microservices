@@ -1,22 +1,24 @@
-import { ClerkProvider } from "@clerk/nextjs";
-import { shadcn } from "@clerk/ui/themes";
-import { Inter } from "next/font/google";
-import { Header } from "@/components/layout/Header";
+import React from "react";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CartProvider } from "@/context/CartContext";
 
-const inter = Inter({ subsets: ["latin"] });
-
-export default function RootLayout({
-    children,
+export default function UserLayout({
+  children,
 }: {
-    children: React.ReactNode;
+  children: React.ReactNode;
 }) {
-    return (
-        <CartProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-        </CartProvider>
-    );
+  return (
+    <TooltipProvider>
+      <CartProvider>
+        <div className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
+          <Navbar />
+          <main className="flex-1 pt-16 xs:pt-20">{children}</main>
+          <Footer />
+        </div>
+      </CartProvider>
+    </TooltipProvider>
+  );
 }
+

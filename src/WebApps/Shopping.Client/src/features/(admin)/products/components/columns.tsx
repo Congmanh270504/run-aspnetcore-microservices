@@ -9,9 +9,12 @@ import {
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Pencil, Trash2 } from "lucide-react";
+import { Eye, Pencil, Trash2 } from "lucide-react";
+
+import { ProductTypeBadge } from "./ProductTypeBadge";
 
 export function createProductColumns(
+    onView: (product: Product) => void,
     onEdit: (product: Product) => void,
     onDelete: (product: Product) => void,
 ): ColumnDef<Product>[] {
@@ -58,15 +61,34 @@ export function createProductColumns(
             },
         },
         {
+            accessorKey: "product_type",
+            header: () => <div className="text-center">Type</div>,
+            cell: ({ row }) => {
+                const product = row.original;
+                const productTypeData =
+                    product.product_type ?? product.productType;
+                return (
+                    <div className="flex justify-center">
+                        <ProductTypeBadge value={productTypeData} />
+                    </div>
+                );
+            },
+        },
+
+        {
             accessorKey: "category",
             header: () => <div className="text-center">Categories</div>,
             cell: ({ row }) => {
                 const product = row.original;
+                const ptName =
+                    typeof product.product_type === "string"
+                        ? product.product_type
+                        : product.product_type?.name;
                 const categories =
                     product.category && product.category.length > 0
                         ? product.category
-                        : product.product_type
-                          ? [product.product_type]
+                        : ptName
+                          ? [ptName]
                           : product.tags || [];
 
                 return (
@@ -111,6 +133,18 @@ export function createProductColumns(
                 const product = row.original;
                 return (
                     <div className="flex items-center justify-center gap-1">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    onClick={() => onView(product)}
+                                    className="p-1.5 hover:bg-muted rounded-md transition-colors cursor-pointer"
+                                >
+                                    <Eye className="h-4 w-4 text-blue-600" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>Xem chi tiết</TooltipContent>
+                        </Tooltip>
+
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <button

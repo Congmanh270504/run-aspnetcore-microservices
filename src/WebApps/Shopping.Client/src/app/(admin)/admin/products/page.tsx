@@ -1,7 +1,8 @@
 import React, { Suspense } from "react";
-import { getProducts } from "@/features/products/actions/catalogActions";
-import { ProductsPageClient } from "@/features/products/components/ProductsPageClient";
+
 import Loading from "./loading";
+import { getProducts } from "@/features/(admin)/products/actions/catalogActions";
+import { ProductsPageClient } from "@/features/(admin)/products/components/ProductsPageClient";
 
 export const revalidate = 0;
 

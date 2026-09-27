@@ -18,6 +18,7 @@ builder.Services.AddCarter();
 builder.Services.AddMarten(opts =>
 {
     opts.Connection(builder.Configuration.GetConnectionString("Database")!);
+    opts.Serializer(new Marten.Services.SystemTextJsonSerializer());
 }).UseLightweightSessions();
 
 if (builder.Environment.IsDevelopment())

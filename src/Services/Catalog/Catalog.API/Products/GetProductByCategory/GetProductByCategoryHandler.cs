@@ -10,7 +10,7 @@ internal class GetProductByCategoryQueryHandler
     public async Task<GetProductByCategoryResult> Handle(GetProductByCategoryQuery query, CancellationToken cancellationToken)
     {
         var products = await session.Query<Product>()
-            .Where(p => p.ProductType == query.Category || p.Tags.Contains(query.Category))
+            .Where(p => (p.ProductType != null && p.ProductType.Name == query.Category) || p.Tags.Contains(query.Category))
             .ToListAsync(cancellationToken);
 
         return new GetProductByCategoryResult(products);

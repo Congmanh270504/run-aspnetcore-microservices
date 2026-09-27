@@ -2,14 +2,17 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY WebApps/Shopping.Client/package*.json ./
+RUN npm config set fetch-retry-maxtimeout 120000 \
+ && npm config set fetch-retry-mintimeout 20000 \
+ && npm config set fetch-retries 5 \
+ && (npm ci --legacy-peer-deps || npm install --legacy-peer-deps)
 
 # Stage 2: Rebuild source code
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY WebApps/Shopping.Client/ .
 
 # Set environment for build
 ENV NEXT_TELEMETRY_DISABLED=1
