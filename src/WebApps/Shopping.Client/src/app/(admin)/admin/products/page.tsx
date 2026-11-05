@@ -2,6 +2,7 @@ import React, { Suspense } from "react";
 
 import Loading from "./loading";
 import { getProducts } from "@/features/(admin)/products/actions/catalogActions";
+import { getDiscounts } from "@/features/(admin)/discounts/actions/discountActions";
 import { ProductsPageClient } from "@/features/(admin)/products/components/ProductsPageClient";
 
 export const revalidate = 0;
@@ -11,8 +12,11 @@ export const metadata = {
 };
 
 async function ProductsPageDataFetcher() {
-    const products = await getProducts(1, 100);
-    return <ProductsPageClient data={products} />;
+    const [products, discounts] = await Promise.all([
+        getProducts(1, 100),
+        getDiscounts().catch(() => []),
+    ]);
+    return <ProductsPageClient data={products} discounts={discounts} />;
 }
 
 export default function AdminProductsPage() {

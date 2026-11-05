@@ -71,7 +71,7 @@ export function DiscountDialog({
                 item
                     ? {
                           productName: item.productName,
-                          description: item.description,
+                          description: item.description ?? "",
                           amount: item.amount,
                           startDate: item.startDate
                               ? new Date(item.startDate)
@@ -94,6 +94,7 @@ export function DiscountDialog({
     const onSubmit = async (values: CouponFormValues) => {
         const payload = {
             ...values,
+            description: values.description?.trim() ? values.description.trim() : null,
             startDate: values.startDate.toISOString(),
             endDate: values.endDate.toISOString(),
         };
@@ -188,16 +189,19 @@ export function DiscountDialog({
                         <FormField
                             control={form.control}
                             name="description"
-                            render={({ field }) => (
+                            render={({ field: { value, ...fieldProps } }) => (
                                 <FormItem>
                                     <FormLabel className="font-semibold text-slate-800">
                                         Description{" "}
-                                        <span className="text-red-500">*</span>
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            (Optional)
+                                        </span>
                                     </FormLabel>
                                     <FormControl>
                                         <Input
-                                            placeholder="e.g. Summer sale discount"
-                                            {...field}
+                                            placeholder="e.g. Summer sale discount (optional)"
+                                            {...fieldProps}
+                                            value={value ?? ""}
                                         />
                                     </FormControl>
                                     <FormMessage />

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { deleteProduct } from "@/features/products/actions/catalogActions";
+import { deleteProduct } from "@/features/(admin)/products/actions/catalogActions";
 import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 

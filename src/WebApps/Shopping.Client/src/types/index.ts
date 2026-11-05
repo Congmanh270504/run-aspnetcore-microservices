@@ -26,6 +26,7 @@ export interface Product {
     variants?: any[];
     images?: any[];
     options?: any[];
+    discount?: number | Coupon;
 }
 
 export interface GetProductsResponse {
@@ -156,7 +157,7 @@ export interface UpdateProductData extends CreateProductData {
 export interface Coupon {
     id: number;
     productName: string;
-    description: string;
+    description?: string | null;
     amount: number;
     startDate?: string | null;
     endDate?: string | null;

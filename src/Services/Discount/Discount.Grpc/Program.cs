@@ -1,7 +1,17 @@
+using Discount.Grpc;
 using Discount.Grpc.Data;
 using Discount.Grpc.Endpoints;
+using Discount.Grpc.Models;
 using Discount.Grpc.Services;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
+
+// Configure Mapster for nullable Description to proto string mapping
+TypeAdapterConfig<Coupon, CouponModel>.NewConfig()
+    .Map(dest => dest.Description, src => src.Description ?? string.Empty);
+
+TypeAdapterConfig<CouponModel, Coupon>.NewConfig()
+    .Map(dest => dest.Description, src => string.IsNullOrEmpty(src.Description) ? null : src.Description);
 
 var builder = WebApplication.CreateBuilder(args);
 

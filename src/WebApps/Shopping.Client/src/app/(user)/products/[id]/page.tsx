@@ -1,10 +1,10 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getProductById } from "@/features/products/actions/catalogActions";
 import { ProductDetailClient } from "@/components/product/ProductDetailClient";
 import { ChevronRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getProductById } from "@/features/(admin)/products/actions/catalogActions";
 
 export const revalidate = 0;
 

@@ -591,3 +591,24 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
         }
     }
 }
+
+body {
+    position: relative;
+}
+
+html.no-scrollbar,
+body.no-scrollbar,
+.no-scrollbar {
+    -ms-overflow-style: none;
+    /* Internet Explorer 10+ */
+    scrollbar-width: none;
+    /* Firefox, Safari 18.2+, Chromium 121+ */
+}
+
+html.no-scrollbar::-webkit-scrollbar,
+body.no-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+    /* Older Safari and Chromium */
+}
+

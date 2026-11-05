@@ -14,6 +14,11 @@ public class DiscountContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<Coupon>(entity =>
+        {
+            entity.Property(e => e.Description).IsRequired(false);
+        });
+
         var seedDate = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         modelBuilder.Entity<Coupon>().HasData(
             new Coupon { Id = 1, ProductName = "IPhone X", Description = "IPhone Discount", Amount = 150, StartDate = seedDate, EndDate = seedDate.AddYears(2), CreatedAt = seedDate, UpdatedAt = seedDate },

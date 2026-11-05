@@ -42,15 +42,16 @@ import { createProductColumns } from "./columns";
 import { ProductDialog } from "./ProductDialog";
 import { ProductDetailDialog } from "./ProductDetailDialog";
 import { toast } from "sonner";
-import type { Product } from "@/types";
+import type { Coupon, Product } from "@/types";
 import { CategoriesManagerDialog } from "../../categories/components/CategoriesManagerDialog";
 import { deleteProduct } from "../actions/catalogActions";
 
 interface Props {
     data: Product[];
+    discounts?: Coupon[];
 }
 
-export function ProductsPageClient({ data }: Props) {
+export function ProductsPageClient({ data, discounts = [] }: Props) {
     // Edit / Create Dialog state
     const [dialogOpen, setDialogOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState<Product | null>(
@@ -230,8 +231,8 @@ export function ProductsPageClient({ data }: Props) {
     }, [deleteProductItem]);
 
     const columns = useMemo(
-        () => createProductColumns(handleView, handleEdit, handleDeleteClick),
-        [handleView, handleEdit, handleDeleteClick],
+        () => createProductColumns(handleView, handleEdit, handleDeleteClick, discounts),
+        [handleView, handleEdit, handleDeleteClick, discounts],
     );
 
     // Toolbar actions for DataTable

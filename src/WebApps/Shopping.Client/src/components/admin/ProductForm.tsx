@@ -6,7 +6,7 @@ import { Product } from "@/types";
 import {
     createProduct,
     updateProduct,
-} from "@/features/products/actions/catalogActions";
+} from "@/features/(admin)/products/actions/catalogActions";
 import {
     Card,
     CardHeader,

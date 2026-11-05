@@ -2,14 +2,15 @@
 
 import React from "react";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { Product } from "@/types";
+import type { Coupon, Product } from "@/types";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Tooltip,
     TooltipContent,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Eye, Pencil, Trash2 } from "lucide-react";
+import { ArrowUpDown, Eye, Pencil, Trash2 } from "lucide-react";
 
 import { ProductTypeBadge } from "./ProductTypeBadge";
 
@@ -17,7 +18,15 @@ export function createProductColumns(
     onView: (product: Product) => void,
     onEdit: (product: Product) => void,
     onDelete: (product: Product) => void,
+    discounts: Coupon[] = [],
 ): ColumnDef<Product>[] {
+    const discountsMap = new Map<string, Coupon>();
+    (discounts || []).forEach((d) => {
+        if (d.productName) {
+            discountsMap.set(d.productName.toLowerCase(), d);
+        }
+    });
+
     return [
         {
             id: "image",
@@ -124,6 +133,98 @@ export function createProductColumns(
                         ${priceVal.toFixed(2)}
                     </div>
                 );
+            },
+        },
+        {
+            id: "discount",
+            accessorFn: (product) => {
+                const productName = (
+                    product.name ||
+                    product.title ||
+                    ""
+                ).toLowerCase();
+                const coupon = discountsMap.get(productName);
+                if (coupon) return coupon.amount;
+                if (typeof product.discount === "number")
+                    return product.discount;
+                if (product.discount && typeof product.discount === "object") {
+                    return product.discount.amount || 0;
+                }
+                return 0;
+            },
+            header: ({ column }) => (
+                <div className="text-center">
+                    <Button
+                        variant="ghost"
+                        onClick={() =>
+                            column.toggleSorting(column.getIsSorted() === "asc")
+                        }
+                        className="p-0 hover:bg-transparent font-bold text-xs"
+                    >
+                        Discount <ArrowUpDown className="ml-1 h-3.5 w-3.5" />
+                    </Button>
+                </div>
+            ),
+            cell: ({ row }) => {
+                const product = row.original;
+                const productName = (
+                    product.name ||
+                    product.title ||
+                    ""
+                ).toLowerCase();
+                const coupon = discountsMap.get(productName);
+
+                let discountAmount = 0;
+                let discountDesc = "";
+
+                if (coupon) {
+                    discountAmount = coupon.amount;
+                    discountDesc = coupon.description || "";
+                } else if (typeof product.discount === "number") {
+                    discountAmount = product.discount;
+                } else if (
+                    product.discount &&
+                    typeof product.discount === "object"
+                ) {
+                    discountAmount = product.discount.amount || 0;
+                    discountDesc = product.discount.description || "";
+                }
+
+                if (!discountAmount || discountAmount <= 0) {
+                    return (
+                        <div className="text-center text-slate-400 text-xs font-medium">
+                            —
+                        </div>
+                    );
+                }
+
+                const badge = (
+                    <Badge
+                        variant="outline"
+                        className="bg-emerald-50 text-emerald-700 border-emerald-200 font-bold text-xs"
+                    >
+                        -${discountAmount.toFixed(2)}
+                    </Badge>
+                );
+
+                if (discountDesc) {
+                    return (
+                        <div className="flex justify-center">
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <div>{badge}</div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p className="font-semibold text-xs">
+                                        {discountDesc}
+                                    </p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </div>
+                    );
+                }
+
+                return <div className="flex justify-center">{badge}</div>;
             },
         },
         {

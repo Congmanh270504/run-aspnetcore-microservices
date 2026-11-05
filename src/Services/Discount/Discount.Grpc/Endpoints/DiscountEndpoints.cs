@@ -30,6 +30,11 @@ public static class DiscountEndpoints
         {
             if (coupon is null) return Results.BadRequest("Invalid coupon data");
             
+            if (string.IsNullOrWhiteSpace(coupon.Description))
+            {
+                coupon.Description = null;
+            }
+
             var now = DateTimeOffset.UtcNow;
             coupon.CreatedAt = now;
             coupon.UpdatedAt = now;
@@ -58,7 +63,7 @@ public static class DiscountEndpoints
             }
 
             existing.ProductName = coupon.ProductName;
-            existing.Description = coupon.Description;
+            existing.Description = string.IsNullOrWhiteSpace(coupon.Description) ? null : coupon.Description;
             existing.Amount = coupon.Amount;
             if (coupon.StartDate.HasValue) existing.StartDate = coupon.StartDate;
             if (coupon.EndDate.HasValue) existing.EndDate = coupon.EndDate;

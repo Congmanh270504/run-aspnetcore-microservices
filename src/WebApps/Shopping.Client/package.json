@@ -13,6 +13,7 @@
         "dev:all": "npm run docker:up && npx concurrently \"npm run api:catalog\" \"npm run dev\""
     },
     "dependencies": {
+        "@base-ui/react": "^1.8.0",
         "@clerk/nextjs": "^5.7.6",
         "@clerk/ui": "^1.33.1",
         "@dnd-kit/core": "^6.3.1",

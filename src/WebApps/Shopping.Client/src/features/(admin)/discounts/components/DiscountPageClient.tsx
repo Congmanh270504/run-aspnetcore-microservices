@@ -33,9 +33,9 @@ export function DiscountPageClient({ data, products = [] }: Props) {
                 (row) => {
                     setDeleteItem(row);
                     setDeleteDialogOpen(true);
-                }
+                },
             ),
-        []
+        [],
     );
 
     return (
@@ -51,7 +51,8 @@ export function DiscountPageClient({ data, products = [] }: Props) {
                             Discounts Management
                         </h1>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                            Manage product coupons and discount amounts for customers.
+                            Manage product coupons and discount amounts for
+                            customers.
                         </p>
                     </div>
                 </div>
@@ -68,7 +69,7 @@ export function DiscountPageClient({ data, products = [] }: Props) {
             </div>
 
             {/* Table */}
-            <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden p-4">
+            <div className="bg-card border border-border rounded-xl shadow-sm overflow-hidden p-2">
                 <DataTable
                     columns={columns}
                     data={data}
@@ -100,11 +101,18 @@ export function DiscountPageClient({ data, products = [] }: Props) {
                 title="Xác nhận xóa mã giảm giá"
                 description="Hành động này sẽ xóa mã giảm giá của sản phẩm khỏi hệ thống."
                 itemName={deleteItem?.productName}
-                itemDetail={deleteItem ? `Số tiền giảm: -$${deleteItem.amount}` : undefined}
+                itemDetail={
+                    deleteItem
+                        ? `Số tiền giảm: -$${deleteItem.amount}`
+                        : undefined
+                }
                 confirmText="Xóa Coupon"
                 onConfirm={async () => {
                     if (!deleteItem) return { success: false };
-                    const result = await deleteDiscount(deleteItem.id, deleteItem.productName);
+                    const result = await deleteDiscount(
+                        deleteItem.id,
+                        deleteItem.productName,
+                    );
                     if (result.success) {
                         toast.success("Coupon deleted successfully!");
                         return { success: true };
@@ -117,4 +125,3 @@ export function DiscountPageClient({ data, products = [] }: Props) {
         </div>
     );
 }
-

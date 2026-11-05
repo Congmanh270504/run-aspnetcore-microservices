@@ -18,11 +18,14 @@ function formatDate(dateStr?: string | null) {
     }
 }
 
-function getStatusBadge(startDateStr?: string | null, endDateStr?: string | null) {
+function getStatusBadge(
+    startDateStr?: string | null,
+    endDateStr?: string | null,
+) {
     if (!startDateStr || !endDateStr) {
         return (
             <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold px-2.5 py-0.5">
-                Đang hiệu lực
+                Active
             </Badge>
         );
     }
@@ -33,13 +36,13 @@ function getStatusBadge(startDateStr?: string | null, endDateStr?: string | null
     if (!isNaN(start.getTime()) && now < start) {
         return (
             <Badge className="bg-blue-100 text-blue-800 border-blue-300 font-semibold px-2.5 py-0.5">
-                Sắp hiệu lực
+                Upcoming
             </Badge>
         );
     } else if (!isNaN(end.getTime()) && now > end) {
         return (
             <Badge className="bg-slate-100 text-slate-600 border-slate-300 font-semibold px-2.5 py-0.5">
-                Hết hạn
+                Expired
             </Badge>
         );
     } else {
@@ -59,7 +62,11 @@ export function createColumns(
         {
             accessorKey: "id",
             header: "ID",
-            cell: ({ row }) => <span className="font-mono text-xs text-muted-foreground">#{row.original.id}</span>,
+            cell: ({ row }) => (
+                <span className="font-mono text-xs text-muted-foreground">
+                    {row.original.id}
+                </span>
+            ),
         },
         {
             accessorKey: "productName",
@@ -75,7 +82,9 @@ export function createColumns(
                 </Button>
             ),
             cell: ({ row }) => (
-                <div className="font-medium text-slate-900">{row.original.productName}</div>
+                <div className="font-medium text-slate-900">
+                    {row.original.productName}
+                </div>
             ),
         },
         {
@@ -90,6 +99,29 @@ export function createColumns(
         {
             accessorKey: "amount",
             header: ({ column }) => (
+                <div className="text-center">
+                    <Button
+                        variant="ghost"
+                        onClick={() =>
+                            column.toggleSorting(column.getIsSorted() === "asc")
+                        }
+                        className="p-0 hover:bg-transparent font-bold"
+                    >
+                        Discount Amount <ArrowUpDown className="ml-2 h-4 w-4" />
+                    </Button>
+                </div>
+            ),
+            cell: ({ row }) => (
+                <div className="text-center">
+                    <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 hover:bg-emerald-200 hover:text-emerald-900 font-bold px-2.5 py-0.5">
+                        -${row.original.amount.toLocaleString("en-US")}
+                    </Badge>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "startDate",
+            header: ({ column }) => (
                 <Button
                     variant="ghost"
                     onClick={() =>
@@ -97,37 +129,45 @@ export function createColumns(
                     }
                     className="p-0 hover:bg-transparent font-bold"
                 >
-                    Discount Amount <ArrowUpDown className="ml-2 h-4 w-4" />
+                    Start Date <ArrowUpDown className="ml-2 h-4 w-4" />
                 </Button>
             ),
             cell: ({ row }) => (
-                <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-bold px-2.5 py-0.5">
-                    -${row.original.amount.toLocaleString("en-US")}
-                </Badge>
-            ),
-        },
-        {
-            accessorKey: "startDate",
-            header: "Ngày bắt đầu",
-            cell: ({ row }) => (
-                <span className="text-xs text-slate-600 font-mono">
+                <span className="text-xs text-green-600 ">
                     {formatDate(row.original.startDate)}
                 </span>
             ),
         },
         {
             accessorKey: "endDate",
-            header: "Ngày kết thúc",
+            header: ({ column }) => (
+                <Button
+                    variant="ghost"
+                    onClick={() =>
+                        column.toggleSorting(column.getIsSorted() === "asc")
+                    }
+                    className="p-0 hover:bg-transparent font-bold"
+                >
+                    End Date <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            ),
             cell: ({ row }) => (
-                <span className="text-xs text-slate-600 font-mono">
+                <span className="text-xs text-red-600 ">
                     {formatDate(row.original.endDate)}
                 </span>
             ),
         },
         {
             id: "status",
-            header: "Trạng thái",
-            cell: ({ row }) => getStatusBadge(row.original.startDate, row.original.endDate),
+            header: () => <div className="text-center">Status</div>,
+            cell: ({ row }) => (
+                <div className="text-center">
+                    {getStatusBadge(
+                        row.original.startDate,
+                        row.original.endDate,
+                    )}
+                </div>
+            ),
         },
         {
             id: "actions",
@@ -157,4 +197,3 @@ export function createColumns(
         },
     ];
 }
-
