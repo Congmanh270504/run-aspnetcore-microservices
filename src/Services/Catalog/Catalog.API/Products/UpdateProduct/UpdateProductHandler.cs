@@ -28,12 +28,14 @@ public class UpdateProductCommandValidator : AbstractValidator<UpdateProductComm
 }
 
 internal class UpdateProductCommandHandler
-    (IDocumentSession session)
+    (ICatalogContext context)
     : ICommandHandler<UpdateProductCommand, UpdateProductResult>
 {
     public async Task<UpdateProductResult> Handle(UpdateProductCommand command, CancellationToken cancellationToken)
     {
-        var product = await session.LoadAsync<Product>(command.Id, cancellationToken);
+        var product = await context.Products
+            .Find(p => p.Id == command.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (product is null)
         {
@@ -51,9 +53,11 @@ internal class UpdateProductCommandHandler
         if (command.Options is not null) product.Options = command.Options;
         product.UpdatedAt = DateTimeOffset.UtcNow;
 
-        session.Update(product);
-        await session.SaveChangesAsync(cancellationToken);
+        var result = await context.Products.ReplaceOneAsync(
+            p => p.Id == product.Id,
+            product,
+            cancellationToken: cancellationToken);
 
-        return new UpdateProductResult(true);
+        return new UpdateProductResult(result.MatchedCount > 0);
     }
 }

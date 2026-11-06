@@ -15,21 +15,24 @@ builder.Services.AddValidatorsFromAssembly(assembly);
 
 builder.Services.AddCarter();
 
-builder.Services.AddMarten(opts =>
-{
-    opts.Connection(builder.Configuration.GetConnectionString("Database")!);
-    opts.Serializer(new Marten.Services.SystemTextJsonSerializer());
-}).UseLightweightSessions();
-
-if (builder.Environment.IsDevelopment())
-    builder.Services.InitializeMartenWith<CatalogInitialData>();
+builder.Services.AddSingleton<ICatalogContext, CatalogContext>();
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
+var mongoConn = builder.Configuration.GetConnectionString("Database")
+    ?? "mongodb://localhost:27017/CatalogDb";
 builder.Services.AddHealthChecks()
-    .AddNpgSql(builder.Configuration.GetConnectionString("Database")!);
+    .AddMongoDb(mongoConn);
 
 var app = builder.Build();
+
+// Seed initial data in Development
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var catalogContext = scope.ServiceProvider.GetRequiredService<ICatalogContext>();
+    await CatalogInitialData.SeedAsync(catalogContext);
+}
 
 // Configure the HTTP request pipeline.
 app.MapCarter();

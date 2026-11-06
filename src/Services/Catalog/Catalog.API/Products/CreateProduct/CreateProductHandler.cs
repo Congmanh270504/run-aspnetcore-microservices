@@ -24,7 +24,7 @@ public class CreateProductCommandValidator : AbstractValidator<CreateProductComm
 }
 
 internal class CreateProductCommandHandler
-    (IDocumentSession session)
+    (ICatalogContext context)
     : ICommandHandler<CreateProductCommand, CreateProductResult>
 {
     public async Task<CreateProductResult> Handle(CreateProductCommand command, CancellationToken cancellationToken)
@@ -44,8 +44,7 @@ internal class CreateProductCommandHandler
             UpdatedAt = DateTimeOffset.UtcNow
         };
 
-        session.Store(product);
-        await session.SaveChangesAsync(cancellationToken);
+        await context.Products.InsertOneAsync(product, cancellationToken: cancellationToken);
 
         return new CreateProductResult(product.Id);
     }

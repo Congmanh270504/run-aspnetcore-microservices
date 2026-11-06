@@ -39,8 +39,11 @@ public class GuidJsonConverter : JsonConverter<Guid>
     }
 }
 
+[BsonIgnoreExtraElements]
 public class Product
 {
+    [BsonId]
+    [BsonRepresentation(BsonType.String)]
     [JsonPropertyName("id")]
     [JsonConverter(typeof(GuidJsonConverter))]
     public Guid Id { get; set; } = Guid.NewGuid();
@@ -127,6 +130,7 @@ public class Product
     }
 }
 
+[BsonIgnoreExtraElements]
 [JsonConverter(typeof(ProductTypeJsonConverter))]
 [Newtonsoft.Json.JsonConverter(typeof(NewtonsoftProductTypeJsonConverter))]
 public class ProductType
@@ -284,6 +288,7 @@ public class NewtonsoftProductTypeJsonConverter : Newtonsoft.Json.JsonConverter
     }
 }
 
+[BsonIgnoreExtraElements]
 public class ProductVariant
 {
     [JsonPropertyName("id")]
@@ -338,6 +343,7 @@ public class ProductVariant
     public DateTimeOffset UpdatedAt { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class ProductImage
 {
     [JsonPropertyName("id")]
@@ -368,6 +374,7 @@ public class ProductImage
     public int Height { get; set; }
 }
 
+[BsonIgnoreExtraElements]
 public class ProductOption
 {
     [JsonPropertyName("name")]

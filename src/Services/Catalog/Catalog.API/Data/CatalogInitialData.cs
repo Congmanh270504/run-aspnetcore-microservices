@@ -1,32 +1,34 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Marten.Schema;
 
 namespace Catalog.API.Data;
 
-public class CatalogInitialData : IInitialData
+public static class CatalogInitialData
 {
-    public async Task Populate(IDocumentStore store, CancellationToken cancellation)
+    public static async Task SeedAsync(ICatalogContext context, CancellationToken cancellation = default)
     {
-        using var session = store.LightweightSession();
-
-        var existingProducts = await session.Query<Product>().ToListAsync(token: cancellation);
-        if (existingProducts.Count >= 30 && existingProducts.All(p => !string.IsNullOrEmpty(p.Title)))
-            return;
-
-        // Remove old dummy products if any exist (e.g. products without Title)
-        var oldDummyProducts = existingProducts.Where(p => string.IsNullOrEmpty(p.Title)).ToList();
-        foreach (var old in oldDummyProducts)
+        try
         {
-            session.Delete(old);
+            var count = await context.Products.CountDocumentsAsync(FilterDefinition<Product>.Empty, cancellationToken: cancellation);
+            if (count >= 30)
+                return;
+
+            var products = GetPreconfiguredProducts();
+            if (products.Any())
+            {
+                foreach (var product in products)
+                {
+                    await context.Products.ReplaceOneAsync(
+                        p => p.Id == product.Id,
+                        product,
+                        new ReplaceOptions { IsUpsert = true },
+                        cancellation);
+                }
+            }
         }
-
-        var products = GetPreconfiguredProducts();
-        if (products.Any())
+        catch (Exception ex)
         {
-            // Marten UPSERT will cater for existing records
-            session.Store<Product>(products);
-            await session.SaveChangesAsync(cancellation);
+            Console.WriteLine($"[CatalogInitialData] Error during seed: {ex.Message}");
         }
     }
 

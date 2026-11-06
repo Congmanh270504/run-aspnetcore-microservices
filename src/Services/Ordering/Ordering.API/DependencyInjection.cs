@@ -12,7 +12,7 @@ public static class DependencyInjection
 
         services.AddExceptionHandler<CustomExceptionHandler>();
         services.AddHealthChecks()
-            .AddSqlServer(configuration.GetConnectionString("Database")!);
+            .AddMySql(configuration.GetConnectionString("Database")!);
 
         return services;
     }

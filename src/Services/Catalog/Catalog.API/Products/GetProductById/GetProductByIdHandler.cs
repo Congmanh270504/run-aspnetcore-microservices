@@ -1,15 +1,17 @@
-﻿namespace Catalog.API.Products.GetProductById;
+namespace Catalog.API.Products.GetProductById;
 
 public record GetProductByIdQuery(Guid Id) : IQuery<GetProductByIdResult>;
 public record GetProductByIdResult(Product Product);
 
 internal class GetProductByIdQueryHandler
-    (IDocumentSession session)
+    (ICatalogContext context)
     : IQueryHandler<GetProductByIdQuery, GetProductByIdResult>
 {
     public async Task<GetProductByIdResult> Handle(GetProductByIdQuery query, CancellationToken cancellationToken)
     {
-        var product = await session.LoadAsync<Product>(query.Id, cancellationToken);
+        var product = await context.Products
+            .Find(p => p.Id == query.Id)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (product is null)
         {

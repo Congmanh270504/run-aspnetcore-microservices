@@ -1,17 +1,15 @@
 version: '3.4'
 
 services:
-  catalogdb:
-    image: postgres:16
-
-  basketdb:
-    image: postgres:16
-
-  distributedcache:
-    image: redis
-
-  orderdb:
-    image: mcr.microsoft.com/mssql/server
+  # --- LOCAL DATABASES (Đã comment lại vì đang dùng Cloud DB: MongoDB Atlas, Supabase, Aiven MySQL, Upstash Redis) ---
+  # catalogdb:
+  #   image: mongo:7
+  # basketdb:
+  #   image: postgres:16
+  # distributedcache:
+  #   image: redis
+  # orderdb:
+  #   image: mysql:8.0
 
   messagebroker:
     image: rabbitmq:management
@@ -46,17 +44,17 @@ services:
       context: .
       dockerfile: ApiGateways/YarpApiGateway/Dockerfile
 
-  shopping.web:
-    image: ${DOCKER_REGISTRY-}shoppingweb
-    build:
-      context: .
-      dockerfile: WebApps/Shopping.Web/Dockerfile
+  # shopping.web: (Legacy Razor UI)
+  #   image: ${DOCKER_REGISTRY-}shoppingweb
+  #   build:
+  #     context: .
+  #     dockerfile: WebApps/Shopping.Web/Dockerfile
 
   shopping.client:
     image: ${DOCKER_REGISTRY-}shoppingclient
     build:
       context: .
-      dockerfile: WebApps/Shopping.Client/Dockerfile
+      dockerfile: Client/Dockerfile
 
 volumes:
   postgres_catalog:

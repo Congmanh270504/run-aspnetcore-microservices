@@ -19,7 +19,7 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
-            options.UseSqlServer(connectionString);
+            options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 36)));
         });
 
         services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
