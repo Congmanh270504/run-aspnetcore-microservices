@@ -158,9 +158,10 @@ export function ProductDetailDialog({
 
     const currentVariant =
         variantsList[selectedVariantIndex] || variantsList[0];
-    const productTypeName = typeof product.product_type === "string"
-        ? product.product_type
-        : product.product_type?.name ?? "";
+    const productTypeName =
+        typeof product.product_type === "string"
+            ? product.product_type
+            : (product.product_type?.name ?? "");
     const categories =
         product.category && product.category.length > 0
             ? product.category
@@ -370,8 +371,7 @@ export function ProductDetailDialog({
                                                         variant="outline"
                                                         className="text-xs"
                                                     >
-                                                        Type:{" "}
-                                                        {productTypeName}
+                                                        Type: {productTypeName}
                                                     </Badge>
                                                 )}
                                         </div>
@@ -410,7 +410,8 @@ export function ProductDetailDialog({
                                                     )}
                                                     {variant.grams ? (
                                                         <p className="text-[10px] text-muted-foreground truncate mt-0.5">
-                                                            Weight: {variant.grams}g
+                                                            Weight:{" "}
+                                                            {variant.grams}g
                                                         </p>
                                                     ) : null}
                                                 </button>

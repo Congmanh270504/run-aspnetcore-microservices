@@ -23,7 +23,9 @@ import type { CategoryRow, ProductTypeRow } from "../actions/categoryActions";
 
 import {
     getProductTypeRows,
+    createProductType,
     renameCategory,
+    createCategory,
     deleteCategory,
     getCategoryRows,
     renameProductType,
@@ -69,6 +71,58 @@ export function CategoriesEditedTable({
     );
 }
 
+// ─── Inline Editable Cell Input ───────────────────────────────────────────────
+
+interface InlineCellInputProps {
+    defaultValue: string;
+    onSave: (val: string) => void;
+    onCancel: () => void;
+    onChangeValue?: (val: string) => void;
+    placeholder?: string;
+    className?: string;
+}
+
+function InlineCellInput({
+    defaultValue,
+    onSave,
+    onCancel,
+    onChangeValue,
+    placeholder,
+    className = "h-8 text-sm",
+}: InlineCellInputProps) {
+    const [val, setVal] = React.useState(defaultValue);
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
+    React.useEffect(() => {
+        const el = inputRef.current;
+        if (el) {
+            el.focus();
+            const len = el.value.length;
+            el.setSelectionRange(len, len);
+        }
+    }, []);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const next = e.target.value;
+        setVal(next);
+        onChangeValue?.(next);
+    };
+
+    return (
+        <Input
+            ref={inputRef}
+            value={val}
+            onChange={handleChange}
+            placeholder={placeholder}
+            className={className}
+            onKeyDown={(e) => {
+                if (e.key === "Enter") onSave(val);
+                if (e.key === "Escape") onCancel();
+            }}
+        />
+    );
+}
+
 // ─── Product Type Table Component ──────────────────────────────────────────────
 
 interface RowItem {
@@ -85,9 +139,10 @@ function ProductTypeTableView({
     const [list, setList] = React.useState<ProductTypeRow[]>(initialData);
     const [loading, setLoading] = React.useState(false);
     const [addingRow, setAddingRow] = React.useState(false);
-    const [newName, setNewName] = React.useState("");
     const [editingName, setEditingName] = React.useState<string | null>(null);
-    const [editingValue, setEditingValue] = React.useState("");
+
+    const editingValueRef = React.useRef("");
+    const newNameRef = React.useRef("");
 
     React.useEffect(() => {
         if (initialData && initialData.length > 0) setList(initialData);
@@ -96,42 +151,32 @@ function ProductTypeTableView({
         }
     }, []);
 
-    const handleNewNameChange = React.useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) =>
-            setNewName(e.target.value.trimStart()),
-        [],
-    );
-    const handleEditValueChange = React.useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) =>
-            setEditingValue(e.target.value.trimStart()),
-        [],
-    );
-
     const startEdit = React.useCallback((name: string) => {
+        editingValueRef.current = name;
         setEditingName(name);
-        setEditingValue(name);
         setAddingRow(false);
     }, []);
 
     const cancelEdit = React.useCallback(() => {
+        editingValueRef.current = "";
         setEditingName(null);
-        setEditingValue("");
     }, []);
 
     const startAdd = React.useCallback(() => {
+        newNameRef.current = "";
         setAddingRow(true);
-        setNewName("");
         setEditingName(null);
     }, []);
 
     const cancelAdd = React.useCallback(() => {
+        newNameRef.current = "";
         setAddingRow(false);
-        setNewName("");
     }, []);
 
     const handleRename = React.useCallback(
-        async (oldName: string) => {
-            const trimmed = editingValue.trim();
+        async (oldName: string, directValue?: string) => {
+            const valToUse = directValue ?? editingValueRef.current;
+            const trimmed = valToUse.trim();
             if (!trimmed) {
                 toast.error("Product type name cannot be empty");
                 return;
@@ -157,23 +202,38 @@ function ProductTypeTableView({
                 toast.error(result.error ?? "Rename failed");
             }
         },
-        [editingValue, cancelEdit],
+        [cancelEdit],
     );
 
-    const handleAddNew = React.useCallback(async () => {
-        const trimmed = newName.trim();
-        if (!trimmed) {
-            toast.error("Product type name cannot be empty");
-            return;
-        }
-        if (list.some((r) => r.name.toLowerCase() === trimmed.toLowerCase())) {
-            toast.error("Product type already exists");
-            return;
-        }
-        setList((prev) => [{ name: trimmed, productCount: 0 }, ...prev]);
-        toast.success(`Added "${trimmed}" — assign it to a product to persist`);
-        cancelAdd();
-    }, [newName, list, cancelAdd]);
+    const handleAddNew = React.useCallback(
+        async (directValue?: string) => {
+            const valToUse = directValue ?? newNameRef.current;
+            const trimmed = valToUse.trim();
+            if (!trimmed) {
+                toast.error("Product type name cannot be empty");
+                return;
+            }
+            if (
+                list.some(
+                    (r) => r.name.toLowerCase() === trimmed.toLowerCase(),
+                )
+            ) {
+                toast.error("Product type already exists");
+                return;
+            }
+            setLoading(true);
+            const result = await createProductType(trimmed);
+            setLoading(false);
+            if (result.success) {
+                setList((prev) => [{ name: trimmed, productCount: 0 }, ...prev]);
+                toast.success(`Created Product Type "${trimmed}"`);
+                cancelAdd();
+            } else {
+                toast.error(result.error ?? "Failed to create product type");
+            }
+        },
+        [list, cancelAdd],
+    );
 
     const handleDelete = React.useCallback(async (name: string) => {
         setLoading(true);
@@ -218,31 +278,26 @@ function ProductTypeTableView({
                     const item = row.original;
                     if (item._isNew) {
                         return (
-                            <Input
-                                autoFocus
-                                value={newName}
-                                onChange={handleNewNameChange}
-                                placeholder="New Product Type name…"
-                                className="h-8 text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleAddNew();
-                                    if (e.key === "Escape") cancelAdd();
+                            <InlineCellInput
+                                defaultValue=""
+                                onChangeValue={(val) => {
+                                    newNameRef.current = val;
                                 }}
+                                onSave={(val) => handleAddNew(val)}
+                                onCancel={cancelAdd}
+                                placeholder="New Product Type name…"
                             />
                         );
                     }
                     if (editingName === item.name) {
                         return (
-                            <Input
-                                autoFocus
-                                value={editingValue}
-                                onChange={handleEditValueChange}
-                                className="h-8 text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter")
-                                        handleRename(item.name);
-                                    if (e.key === "Escape") cancelEdit();
+                            <InlineCellInput
+                                defaultValue={item.name}
+                                onChangeValue={(val) => {
+                                    editingValueRef.current = val;
                                 }}
+                                onSave={(val) => handleRename(item.name, val)}
+                                onCancel={cancelEdit}
                             />
                         );
                     }
@@ -309,7 +364,7 @@ function ProductTypeTableView({
                                     size="sm"
                                     variant="outline"
                                     className="h-7 px-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                                    onClick={handleAddNew}
+                                    onClick={() => handleAddNew()}
                                     disabled={loading}
                                 >
                                     <Check className="h-3.5 w-3.5" />
@@ -379,14 +434,12 @@ function ProductTypeTableView({
             cancelAdd,
             cancelEdit,
             editingName,
-            editingValue,
             handleAddNew,
             handleDelete,
-            handleEditValueChange,
-            handleNewNameChange,
             handleRename,
             loading,
-            newName,
+            refresh,
+            startAdd,
             startEdit,
         ],
     );
@@ -415,9 +468,10 @@ function CategoryTableView({ initialData }: { initialData: CategoryRow[] }) {
     const [list, setList] = React.useState<CategoryRow[]>(initialData);
     const [loading, setLoading] = React.useState(false);
     const [addingRow, setAddingRow] = React.useState(false);
-    const [newName, setNewName] = React.useState("");
     const [editingName, setEditingName] = React.useState<string | null>(null);
-    const [editingValue, setEditingValue] = React.useState("");
+
+    const editingValueRef = React.useRef("");
+    const newNameRef = React.useRef("");
 
     React.useEffect(() => {
         if (initialData && initialData.length > 0) setList(initialData);
@@ -426,42 +480,32 @@ function CategoryTableView({ initialData }: { initialData: CategoryRow[] }) {
         }
     }, []);
 
-    const handleNewNameChange = React.useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) =>
-            setNewName(e.target.value.trimStart()),
-        [],
-    );
-    const handleEditValueChange = React.useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) =>
-            setEditingValue(e.target.value.trimStart()),
-        [],
-    );
-
     const startEdit = React.useCallback((name: string) => {
+        editingValueRef.current = name;
         setEditingName(name);
-        setEditingValue(name);
         setAddingRow(false);
     }, []);
 
     const cancelEdit = React.useCallback(() => {
+        editingValueRef.current = "";
         setEditingName(null);
-        setEditingValue("");
     }, []);
 
     const startAdd = React.useCallback(() => {
+        newNameRef.current = "";
         setAddingRow(true);
-        setNewName("");
         setEditingName(null);
     }, []);
 
     const cancelAdd = React.useCallback(() => {
+        newNameRef.current = "";
         setAddingRow(false);
-        setNewName("");
     }, []);
 
     const handleRename = React.useCallback(
-        async (oldName: string) => {
-            const trimmed = editingValue.trim();
+        async (oldName: string, directValue?: string) => {
+            const valToUse = directValue ?? editingValueRef.current;
+            const trimmed = valToUse.trim();
             if (!trimmed) {
                 toast.error("Category name cannot be empty");
                 return;
@@ -485,23 +529,38 @@ function CategoryTableView({ initialData }: { initialData: CategoryRow[] }) {
                 toast.error(result.error ?? "Rename failed");
             }
         },
-        [editingValue, cancelEdit],
+        [cancelEdit],
     );
 
-    const handleAddNew = React.useCallback(async () => {
-        const trimmed = newName.trim();
-        if (!trimmed) {
-            toast.error("Category name cannot be empty");
-            return;
-        }
-        if (list.some((r) => r.name.toLowerCase() === trimmed.toLowerCase())) {
-            toast.error("Category already exists");
-            return;
-        }
-        setList((prev) => [{ name: trimmed, productCount: 0 }, ...prev]);
-        toast.success(`Added "${trimmed}" — assign it to a product to persist`);
-        cancelAdd();
-    }, [newName, list, cancelAdd]);
+    const handleAddNew = React.useCallback(
+        async (directValue?: string) => {
+            const valToUse = directValue ?? newNameRef.current;
+            const trimmed = valToUse.trim();
+            if (!trimmed) {
+                toast.error("Category name cannot be empty");
+                return;
+            }
+            if (
+                list.some(
+                    (r) => r.name.toLowerCase() === trimmed.toLowerCase(),
+                )
+            ) {
+                toast.error("Category already exists");
+                return;
+            }
+            setLoading(true);
+            const result = await createCategory(trimmed);
+            setLoading(false);
+            if (result.success) {
+                setList((prev) => [{ name: trimmed, productCount: 0 }, ...prev]);
+                toast.success(`Created Category "${trimmed}"`);
+                cancelAdd();
+            } else {
+                toast.error(result.error ?? "Failed to create category");
+            }
+        },
+        [list, cancelAdd],
+    );
 
     const handleDelete = React.useCallback(async (name: string) => {
         setLoading(true);
@@ -546,31 +605,26 @@ function CategoryTableView({ initialData }: { initialData: CategoryRow[] }) {
                     const item = row.original;
                     if (item._isNew) {
                         return (
-                            <Input
-                                autoFocus
-                                value={newName}
-                                onChange={handleNewNameChange}
-                                placeholder="New category name…"
-                                className="h-8 text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleAddNew();
-                                    if (e.key === "Escape") cancelAdd();
+                            <InlineCellInput
+                                defaultValue=""
+                                onChangeValue={(val) => {
+                                    newNameRef.current = val;
                                 }}
+                                onSave={(val) => handleAddNew(val)}
+                                onCancel={cancelAdd}
+                                placeholder="New category name…"
                             />
                         );
                     }
                     if (editingName === item.name) {
                         return (
-                            <Input
-                                autoFocus
-                                value={editingValue}
-                                onChange={handleEditValueChange}
-                                className="h-8 text-sm"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter")
-                                        handleRename(item.name);
-                                    if (e.key === "Escape") cancelEdit();
+                            <InlineCellInput
+                                defaultValue={item.name}
+                                onChangeValue={(val) => {
+                                    editingValueRef.current = val;
                                 }}
+                                onSave={(val) => handleRename(item.name, val)}
+                                onCancel={cancelEdit}
                             />
                         );
                     }
@@ -637,7 +691,7 @@ function CategoryTableView({ initialData }: { initialData: CategoryRow[] }) {
                                     size="sm"
                                     variant="outline"
                                     className="h-7 px-2 text-emerald-600 border-emerald-300 hover:bg-emerald-50"
-                                    onClick={handleAddNew}
+                                    onClick={() => handleAddNew()}
                                     disabled={loading}
                                 >
                                     <Check className="h-3.5 w-3.5" />
@@ -707,14 +761,12 @@ function CategoryTableView({ initialData }: { initialData: CategoryRow[] }) {
             cancelAdd,
             cancelEdit,
             editingName,
-            editingValue,
             handleAddNew,
             handleDelete,
-            handleEditValueChange,
-            handleNewNameChange,
             handleRename,
             loading,
-            newName,
+            refresh,
+            startAdd,
             startEdit,
         ],
     );

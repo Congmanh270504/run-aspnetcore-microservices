@@ -1,29 +1,9 @@
-import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-} from "@/components/ui/dialog";
-
 export default function page() {
     return (
-        <Dialog>
-            <DialogTrigger>Open</DialogTrigger>
-            <DialogContent>
-                <DialogHeader>
-                    <DialogTitle>Are you absolutely sure?</DialogTitle>
-                    <DialogDescription>
-                        This action cannot be undone. This will permanently
-                        delete your account and remove your data from our
-                        servers.
-                    </DialogDescription>
-                </DialogHeader>
-            </DialogContent>
-        </Dialog>
+        <div className="min-h-[70vh] flex flex-col items-center justify-center p-8 bg-[#eeeeee] dark:bg-neutral-900 rounded-3xl m-4">
+            <a className="btn-1" href="#">
+                Diagonal Swipe
+            </a>
+        </div>
     );
 }

@@ -1,10 +1,8 @@
 "use server";
 
-import { fetchFromGateway, fetchDirect } from "@/lib/gatewayClient";
+import { fetchFromGateway } from "@/lib/gatewayClient";
 import { revalidatePath } from "next/cache";
 import { getProducts } from "../../products/actions/catalogActions";
-
-const CATALOG_URL = process.env.CATALOG_API_URL || "http://localhost:56258";
 
 export interface CategoryRow {
     name: string;
@@ -19,11 +17,26 @@ export interface ProductTypeRow {
 // ─── Read Categories ────────────────────────────────────────────────────────────
 
 export async function getCategoryRows(): Promise<CategoryRow[]> {
+    try {
+        const gatewayRes = await fetchFromGateway<{ categories: CategoryRow[] }>(
+            "/catalog-service/categories",
+        );
+        if (gatewayRes?.categories && gatewayRes.categories.length > 0) {
+            return gatewayRes.categories;
+        }
+    } catch {
+        // Fallback to reading from products
+    }
+
+    // Fallback: aggregate from products
     const products = await getProducts(1, 500);
     const map = new Map<string, number>();
     products.forEach((p) => {
         p.category?.forEach((cat) => {
-            map.set(cat, (map.get(cat) ?? 0) + 1);
+            if (cat && cat.trim()) {
+                const trimmed = cat.trim();
+                map.set(trimmed, (map.get(trimmed) ?? 0) + 1);
+            }
         });
     });
     return Array.from(map.entries())
@@ -31,9 +44,106 @@ export async function getCategoryRows(): Promise<CategoryRow[]> {
         .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ─── Create Category ───────────────────────────────────────────────────────────
+
+export async function createCategory(
+    name: string,
+): Promise<{ success: boolean; error?: string }> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+        return { success: false, error: "Category name cannot be empty" };
+    }
+
+    try {
+        const body = JSON.stringify({ name: trimmed });
+        const res = await fetchFromGateway<{ category: CategoryRow }>(
+            "/catalog-service/categories",
+            { method: "POST", body },
+        );
+        if (res) {
+            revalidatePath("/admin/categories");
+            return { success: true };
+        }
+        return { success: false, error: "Failed to create category" };
+    } catch (err) {
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : "Failed to create category",
+        };
+    }
+}
+
+// ─── Rename Category ───────────────────────────────────────────────────────────
+
+export async function renameCategory(
+    oldName: string,
+    newName: string,
+): Promise<{ success: boolean; error?: string }> {
+    const trimmed = newName.trim();
+    if (!trimmed)
+        return { success: false, error: "Category name cannot be empty" };
+    if (trimmed === oldName) return { success: true };
+
+    try {
+        const body = JSON.stringify({ oldName, newName: trimmed });
+        const res = await fetchFromGateway<{ isSuccess: boolean }>(
+            "/catalog-service/categories",
+            { method: "PUT", body },
+        );
+        if (res) {
+            revalidatePath("/admin/categories");
+            revalidatePath("/admin/products");
+            return { success: true };
+        }
+        return { success: false, error: "Failed to rename category" };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : "Unknown error",
+        };
+    }
+}
+
+// ─── Delete Category ───────────────────────────────────────────────────────────
+
+export async function deleteCategory(
+    name: string,
+): Promise<{ success: boolean; error?: string }> {
+    try {
+        const encoded = encodeURIComponent(name);
+        const res = await fetchFromGateway<{ isSuccess: boolean }>(
+            `/catalog-service/categories/${encoded}`,
+            { method: "DELETE" },
+        );
+        if (res) {
+            revalidatePath("/admin/categories");
+            revalidatePath("/admin/products");
+            return { success: true };
+        }
+        return { success: false, error: "Failed to delete category" };
+    } catch (err: unknown) {
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : "Unknown error",
+        };
+    }
+}
+
 // ─── Read Product Types ─────────────────────────────────────────────────────────
 
 export async function getProductTypeRows(): Promise<ProductTypeRow[]> {
+    try {
+        const gatewayRes = await fetchFromGateway<{ productTypes: ProductTypeRow[] }>(
+            "/catalog-service/product-types",
+        );
+        if (gatewayRes?.productTypes && gatewayRes.productTypes.length > 0) {
+            return gatewayRes.productTypes;
+        }
+    } catch {
+        // Fallback to reading from products
+    }
+
+    // Fallback: aggregate from products
     const products = await getProducts(1, 500);
     const map = new Map<string, number>();
     products.forEach((p) => {
@@ -53,6 +163,35 @@ export async function getProductTypeRows(): Promise<ProductTypeRow[]> {
         .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+// ─── Create Product Type ───────────────────────────────────────────────────────
+
+export async function createProductType(
+    name: string,
+): Promise<{ success: boolean; error?: string }> {
+    const trimmed = name.trim();
+    if (!trimmed) {
+        return { success: false, error: "Product type name cannot be empty" };
+    }
+
+    try {
+        const body = JSON.stringify({ name: trimmed });
+        const res = await fetchFromGateway<{ productType: ProductTypeRow }>(
+            "/catalog-service/product-types",
+            { method: "POST", body },
+        );
+        if (res) {
+            revalidatePath("/admin/categories");
+            return { success: true };
+        }
+        return { success: false, error: "Failed to create product type" };
+    } catch (err) {
+        return {
+            success: false,
+            error: err instanceof Error ? err.message : "Failed to create product type",
+        };
+    }
+}
+
 // ─── Rename Product Type ───────────────────────────────────────────────────────
 
 export async function renameProductType(
@@ -65,55 +204,17 @@ export async function renameProductType(
     if (trimmed === oldName) return { success: true };
 
     try {
-        const products = await getProducts(1, 500);
-        const affected = products.filter((p) => {
-            const currentName = typeof p.product_type === "string" 
-                ? p.product_type 
-                : p.product_type?.name;
-            return currentName === oldName;
-        });
-
-        const results = await Promise.allSettled(
-            affected.map((p) => {
-                const updatedType = typeof p.product_type === "object" && p.product_type !== null
-                    ? { ...p.product_type, name: trimmed }
-                    : { id: 0, name: trimmed, sort_order: 0 };
-
-                const body = JSON.stringify({
-                    ...p,
-                    product_type: updatedType,
-                    productType: updatedType,
-                });
-
-                const tryGateway = fetchFromGateway<{ isSuccess: boolean }>(
-                    `/catalog-service/products`,
-                    { method: "PUT", body },
-                );
-                const tryDirect = () =>
-                    fetchDirect<{ isSuccess: boolean }>(
-                        CATALOG_URL,
-                        `/products`,
-                        {
-                            method: "PUT",
-                            body,
-                        },
-                    );
-
-                return tryGateway.then((res) => res ?? tryDirect());
-            }),
+        const body = JSON.stringify({ oldName, newName: trimmed });
+        const res = await fetchFromGateway<{ isSuccess: boolean }>(
+            "/catalog-service/product-types",
+            { method: "PUT", body },
         );
-
-        const failed = results.filter((r) => r.status === "rejected").length;
-        if (failed > 0) {
-            return {
-                success: false,
-                error: `${failed} product(s) could not be updated`,
-            };
+        if (res) {
+            revalidatePath("/admin/categories");
+            revalidatePath("/admin/products");
+            return { success: true };
         }
-
-        revalidatePath("/admin/categories");
-        revalidatePath("/admin/products");
-        return { success: true };
+        return { success: false, error: "Failed to rename product type" };
     } catch (err: unknown) {
         return {
             success: false,
@@ -128,169 +229,17 @@ export async function deleteProductType(
     name: string,
 ): Promise<{ success: boolean; error?: string }> {
     try {
-        const products = await getProducts(1, 500);
-        const affected = products.filter((p) => {
-            const currentName = typeof p.product_type === "string" 
-                ? p.product_type 
-                : p.product_type?.name;
-            return currentName === name;
-        });
-
-        const results = await Promise.allSettled(
-            affected.map((p) => {
-                const body = JSON.stringify({
-                    ...p,
-                    product_type: null,
-                    productType: null,
-                });
-
-                const tryGateway = fetchFromGateway<{ isSuccess: boolean }>(
-                    `/catalog-service/products`,
-                    { method: "PUT", body },
-                );
-                const tryDirect = () =>
-                    fetchDirect<{ isSuccess: boolean }>(
-                        CATALOG_URL,
-                        `/products`,
-                        {
-                            method: "PUT",
-                            body,
-                        },
-                    );
-
-                return tryGateway.then((res) => res ?? tryDirect());
-            }),
+        const encoded = encodeURIComponent(name);
+        const res = await fetchFromGateway<{ isSuccess: boolean }>(
+            `/catalog-service/product-types/${encoded}`,
+            { method: "DELETE" },
         );
-
-        const failed = results.filter((r) => r.status === "rejected").length;
-        if (failed > 0) {
-            return {
-                success: false,
-                error: `${failed} product(s) could not be updated`,
-            };
+        if (res) {
+            revalidatePath("/admin/categories");
+            revalidatePath("/admin/products");
+            return { success: true };
         }
-
-        revalidatePath("/admin/categories");
-        revalidatePath("/admin/products");
-        return { success: true };
-    } catch (err: unknown) {
-        return {
-            success: false,
-            error: err instanceof Error ? err.message : "Unknown error",
-        };
-    }
-}
-
-// ─── Rename ────────────────────────────────────────────────────────────────────
-// Renames a category across ALL products that use it
-
-export async function renameCategory(
-    oldName: string,
-    newName: string,
-): Promise<{ success: boolean; error?: string }> {
-    const trimmed = newName.trim();
-    if (!trimmed)
-        return { success: false, error: "Category name cannot be empty" };
-    if (trimmed === oldName) return { success: true };
-
-    try {
-        const products = await getProducts(1, 500);
-        const affected = products.filter((p) => p.category?.includes(oldName));
-
-        const results = await Promise.allSettled(
-            affected.map((p) => {
-                const updatedCategory = p.category.map((c) =>
-                    c === oldName ? trimmed : c,
-                );
-                const body = JSON.stringify({
-                    ...p,
-                    category: updatedCategory,
-                });
-
-                const tryGateway = fetchFromGateway<{ isSuccess: boolean }>(
-                    `/catalog-service/products`,
-                    { method: "PUT", body },
-                );
-                const tryDirect = () =>
-                    fetchDirect<{ isSuccess: boolean }>(
-                        CATALOG_URL,
-                        `/products`,
-                        {
-                            method: "PUT",
-                            body,
-                        },
-                    );
-
-                return tryGateway.then((res) => res ?? tryDirect());
-            }),
-        );
-
-        const failed = results.filter((r) => r.status === "rejected").length;
-        if (failed > 0) {
-            return {
-                success: false,
-                error: `${failed} product(s) could not be updated`,
-            };
-        }
-
-        revalidatePath("/admin/categories");
-        revalidatePath("/admin/products");
-        return { success: true };
-    } catch (err: unknown) {
-        return {
-            success: false,
-            error: err instanceof Error ? err.message : "Unknown error",
-        };
-    }
-}
-
-// ─── Delete ────────────────────────────────────────────────────────────────────
-// Removes a category tag from ALL products that use it
-
-export async function deleteCategory(
-    name: string,
-): Promise<{ success: boolean; error?: string }> {
-    try {
-        const products = await getProducts(1, 500);
-        const affected = products.filter((p) => p.category?.includes(name));
-
-        const results = await Promise.allSettled(
-            affected.map((p) => {
-                const updatedCategory = p.category.filter((c) => c !== name);
-                const body = JSON.stringify({
-                    ...p,
-                    category: updatedCategory,
-                });
-
-                const tryGateway = fetchFromGateway<{ isSuccess: boolean }>(
-                    `/catalog-service/products`,
-                    { method: "PUT", body },
-                );
-                const tryDirect = () =>
-                    fetchDirect<{ isSuccess: boolean }>(
-                        CATALOG_URL,
-                        `/products`,
-                        {
-                            method: "PUT",
-                            body,
-                        },
-                    );
-
-                return tryGateway.then((res) => res ?? tryDirect());
-            }),
-        );
-
-        const failed = results.filter((r) => r.status === "rejected").length;
-        if (failed > 0) {
-            return {
-                success: false,
-                error: `${failed} product(s) could not be updated`,
-            };
-        }
-
-        revalidatePath("/admin/categories");
-        revalidatePath("/admin/products");
-        return { success: true };
+        return { success: false, error: "Failed to delete product type" };
     } catch (err: unknown) {
         return {
             success: false,

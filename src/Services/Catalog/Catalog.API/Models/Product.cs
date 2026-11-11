@@ -113,20 +113,26 @@ public class Product
         set { }
     }
 
+    private decimal _price;
+
+    [BsonElement("price")]
+    [BsonRepresentation(BsonType.Decimal128)]
     [JsonPropertyName("price")]
     public decimal Price
     {
         get
         {
+            if (_price > 0) return _price;
             var firstPrice = Variants.FirstOrDefault()?.Price;
             if (!string.IsNullOrEmpty(firstPrice) &&
                 decimal.TryParse(firstPrice, NumberStyles.Any, CultureInfo.InvariantCulture, out var price))
             {
+                _price = price;
                 return price;
             }
             return 0m;
         }
-        set { }
+        set => _price = value;
     }
 }
 
@@ -316,7 +322,7 @@ public class ProductVariant
     public bool Taxable { get; set; }
 
     [JsonPropertyName("featured_image")]
-    public object? FeaturedImage { get; set; }
+    public ProductImage? FeaturedImage { get; set; }
 
     [JsonPropertyName("available")]
     public bool Available { get; set; }

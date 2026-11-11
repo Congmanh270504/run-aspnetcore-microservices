@@ -11,8 +11,8 @@ services:
   # orderdb:
   #   image: mysql:8.0
 
-  messagebroker:
-    image: rabbitmq:management
+#   messagebroker:
+#     image: rabbitmq:management
 
   catalog.api:
     image: ${DOCKER_REGISTRY-}catalogapi
@@ -50,18 +50,12 @@ services:
   #     context: .
   #     dockerfile: WebApps/Shopping.Web/Dockerfile
 
-  shopping.client:
-    image: ${DOCKER_REGISTRY-}shoppingclient
-    build:
-      context: .
-      dockerfile: Client/Dockerfile
+#   shopping.client:
+#     image: ${DOCKER_REGISTRY-}shoppingclient
+#     build:
+#       context: .
+#       dockerfile: Client/Dockerfile
 
 volumes:
   postgres_catalog:
   postgres_basket:
-
-
-
-
-
-

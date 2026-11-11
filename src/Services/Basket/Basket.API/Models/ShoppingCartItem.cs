@@ -1,4 +1,4 @@
-﻿namespace Basket.API.Models;
+namespace Basket.API.Models;
 
 public class ShoppingCartItem
 {
@@ -7,4 +7,6 @@ public class ShoppingCartItem
     public decimal Price { get; set; } = default!;
     public Guid ProductId { get; set; } = default!;
     public string ProductName { get; set; } = default!;
+    public string? ImageFile { get; set; }
+    public string? Variant { get; set; }
 }

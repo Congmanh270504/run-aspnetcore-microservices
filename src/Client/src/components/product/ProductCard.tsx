@@ -21,15 +21,39 @@ export function ProductCard({ product }: Props) {
     const displayName = product.name || product.title || "Product";
     const displayDesc =
         product.description || product.body_html || "No description provided.";
-    const displayPrice = Number(
-        product.price ?? product.variants?.[0]?.price ?? 0,
-    );
+
+    const rawPrice = Number(product.price ?? product.variants?.[0]?.price ?? 0);
+
+    const discountAmount =
+        typeof product.discount === "number"
+            ? product.discount
+            : product.discount && typeof product.discount === "object"
+              ? Number(product.discount.amount || 0)
+              : 0;
+
+    const compareAtPrice = product.variants?.[0]?.compare_at_price
+        ? Number(product.variants[0].compare_at_price)
+        : 0;
+
+    let originalPrice = rawPrice;
+    let finalPrice = rawPrice;
+    let hasDiscount = false;
+
+    if (discountAmount > 0) {
+        hasDiscount = true;
+        originalPrice = rawPrice;
+        finalPrice = Math.max(0, rawPrice - discountAmount);
+    } else if (compareAtPrice > rawPrice) {
+        hasDiscount = true;
+        originalPrice = compareAtPrice;
+        finalPrice = rawPrice;
+    }
 
     return (
         <Card className="group overflow-hidden flex flex-col justify-between border transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5">
             <Link
                 href={`/products/${product.id}`}
-                className="block relative overflow-hidden bg-slate-100 aspect-square"
+                className="block relative overflow-hidden bg-slate-100 dark:bg-slate-800/60 aspect-square"
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
@@ -54,6 +78,15 @@ export function ProductCard({ product }: Props) {
                         ))}
                     </div>
                 )}
+                {hasDiscount && (
+                    <div className="absolute top-2 right-2">
+                        <Badge className="bg-red-500 hover:bg-red-600 text-white text-[11px] font-semibold shadow-sm">
+                            {discountAmount > 0
+                                ? `-$${discountAmount}`
+                                : `Save $${(originalPrice - finalPrice).toFixed(0)}`}
+                        </Badge>
+                    </div>
+                )}
             </Link>
 
             <CardContent className="p-4 flex-1 flex flex-col justify-between">
@@ -74,11 +107,23 @@ export function ProductCard({ product }: Props) {
                     <span className="text-xs text-muted-foreground font-medium">
                         Price
                     </span>
-                    <span className="text-lg font-bold text-emerald-600">
-                        ${Number(product.price).toFixed(2)}
-                    </span>
+                    <div className="flex items-baseline gap-2">
+                        <span className="text-lg font-bold text-emerald-600">
+                            ${finalPrice.toFixed(2)}
+                        </span>
+                        {hasDiscount && (
+                            <span className="text-xs text-muted-foreground line-through">
+                                ${originalPrice.toFixed(2)}
+                            </span>
+                        )}
+                    </div>
                 </div>
-                <AddToCartButton product={product} />
+                <AddToCartButton
+                    product={{
+                        ...product,
+                        price: finalPrice,
+                    }}
+                />
             </CardFooter>
         </Card>
     );

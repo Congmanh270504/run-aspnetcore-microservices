@@ -31,6 +31,7 @@ export interface Product {
 
 export interface GetProductsResponse {
     products: Product[];
+    totalCount?: number;
 }
 
 export interface GetProductByIdResponse {
@@ -39,6 +40,7 @@ export interface GetProductByIdResponse {
 
 export interface GetProductByCategoryResponse {
     products: Product[];
+    totalCount?: number;
 }
 
 export interface ShoppingCartItem {
@@ -47,6 +49,8 @@ export interface ShoppingCartItem {
     price: number;
     productId: string;
     productName: string;
+    imageFile?: string;
+    variant?: string;
 }
 
 export interface ShoppingCart {

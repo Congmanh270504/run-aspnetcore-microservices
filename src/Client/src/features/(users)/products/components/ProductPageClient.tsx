@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Filter, SlidersHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,15 +22,19 @@ import { ProductQuickViewDialog } from "./ProductQuickViewDialog";
 
 interface Props {
     initialProducts: Product[];
-    allCategories: string[];
+    totalCount?: number;
+    currentPage?: number;
+    pageSize?: number;
+    allCategories: Array<{ name: string; productCount: number } | string>;
     initialCategory?: string;
     initialSearch?: string;
+    initialPriceRange?: [number, number];
 }
 
 const DEFAULT_FILTER_STATE: ProductFilterState = {
     categories: [],
     skinTypes: [],
-    priceRange: [0, 300],
+    priceRange: [0, 1000],
     ratings: [],
     promotions: [],
     availability: [],
@@ -41,15 +46,125 @@ const DEFAULT_FILTER_STATE: ProductFilterState = {
 
 export function ProductPageClient({
     initialProducts,
+    totalCount = 0,
+    currentPage = 1,
+    pageSize = 12,
     allCategories,
     initialCategory,
     initialSearch,
+    initialPriceRange,
 }: Props) {
+    const router = useRouter();
+    const searchParams = useSearchParams();
+    const pathname = usePathname();
+    const [isPending, startTransition] = React.useTransition();
+
     const [filterState, setFilterState] = useState<ProductFilterState>(() => ({
         ...DEFAULT_FILTER_STATE,
-        categories: initialCategory ? [initialCategory] : [],
+        categories: initialCategory
+            ? initialCategory
+                  .split(",")
+                  .map((c) => c.trim())
+                  .filter(Boolean)
+            : [],
         searchQuery: initialSearch || "",
+        page: currentPage,
+        pageSize: pageSize,
+        priceRange: initialPriceRange || [0, 1000],
     }));
+
+    React.useEffect(() => {
+        setFilterState((prev) =>
+            prev.page !== currentPage ? { ...prev, page: currentPage } : prev,
+        );
+    }, [currentPage]);
+
+    React.useEffect(() => {
+        setFilterState((prev) => {
+            const nextCat = initialCategory
+                ? initialCategory
+                      .split(",")
+                      .map((c) => c.trim())
+                      .filter(Boolean)
+                : [];
+            const isDifferent =
+                prev.categories.length !== nextCat.length ||
+                prev.categories.some((c, i) => c !== nextCat[i]);
+            if (isDifferent) {
+                return { ...prev, categories: nextCat };
+            }
+            return prev;
+        });
+    }, [initialCategory]);
+
+    React.useEffect(() => {
+        if (initialPriceRange) {
+            setFilterState((prev) => {
+                if (
+                    prev.priceRange[0] !== initialPriceRange[0] ||
+                    prev.priceRange[1] !== initialPriceRange[1]
+                ) {
+                    return { ...prev, priceRange: initialPriceRange };
+                }
+                return prev;
+            });
+        }
+    }, [initialPriceRange?.[0], initialPriceRange?.[1]]);
+
+    // Sync filter changes (priceRange & categories) to URL searchParams
+    const isFirstRender = React.useRef(true);
+    React.useEffect(() => {
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const timer = setTimeout(() => {
+            const params = new URLSearchParams(
+                searchParams ? searchParams.toString() : "",
+            );
+
+            const [minP, maxP] = filterState.priceRange;
+
+            if (minP > 0) {
+                params.set("minPrice", minP.toString());
+            } else {
+                params.delete("minPrice");
+            }
+
+            if (maxP < 1000) {
+                params.set("maxPrice", maxP.toString());
+            } else {
+                params.delete("maxPrice");
+            }
+
+            if (filterState.categories.length > 0) {
+                params.set("category", filterState.categories.join(","));
+            } else {
+                params.delete("category");
+            }
+
+            params.delete("page");
+
+            const qs = params.toString();
+            const targetUrl = qs ? `${pathname}?${qs}` : pathname;
+            const currentUrl = searchParams
+                ? `${pathname}?${searchParams.toString()}`
+                : pathname;
+
+            if (targetUrl !== currentUrl) {
+                startTransition(() => {
+                    router.push(targetUrl, { scroll: false });
+                });
+            }
+        }, 400);
+
+        return () => clearTimeout(timer);
+    }, [
+        filterState.priceRange[0],
+        filterState.priceRange[1],
+        filterState.categories,
+    ]);
 
     const [quickViewProduct, setQuickViewProduct] =
         useState<DisplayProduct | null>(null);
@@ -86,18 +201,27 @@ export function ProductPageClient({
                 ? Number(p.variants[0].compare_at_price)
                 : 0;
 
+            const discountAmount =
+                typeof p.discount === "number"
+                    ? p.discount
+                    : p.discount && typeof p.discount === "object"
+                      ? Number(p.discount.amount || 0)
+                      : 0;
+
             let originalPrice = rawPrice;
+            let displayPrice = rawPrice;
             let discountP = 0;
 
-            if (comparePrice > rawPrice) {
+            if (discountAmount > 0) {
+                originalPrice = rawPrice;
+                displayPrice = Math.max(0, rawPrice - discountAmount);
+                discountP = Math.round((discountAmount / rawPrice) * 100);
+            } else if (comparePrice > rawPrice) {
                 originalPrice = comparePrice;
+                displayPrice = rawPrice;
                 discountP = Math.round(
                     ((comparePrice - rawPrice) / comparePrice) * 100,
                 );
-            } else if (typeof p.discount === "number" && p.discount > 0) {
-                discountP = p.discount;
-                originalPrice =
-                    Math.round((rawPrice / (1 - discountP / 100)) * 100) / 100;
             }
 
             // Detect skin type from tags if available, else cycle default
@@ -141,7 +265,7 @@ export function ProductPageClient({
                 displayName,
                 displayImage,
                 hoverImage,
-                displayPrice: rawPrice,
+                displayPrice,
                 originalPrice,
                 discountPercent: discountP,
                 rating,
@@ -156,10 +280,26 @@ export function ProductPageClient({
         });
     }, [initialProducts]);
 
+    // Build real category counts map directly from DB data
+    const categoryCountsMap = useMemo(() => {
+        const map: Record<string, number> = {};
+        allCategories.forEach((c) => {
+            if (typeof c === "string") {
+                map[c.toLowerCase()] = 0;
+            } else if (c && typeof c === "object") {
+                map[c.name.toLowerCase()] = c.productCount;
+            }
+        });
+        return map;
+    }, [allCategories]);
+
     // Available categories combined
     const availableCategories = useMemo(() => {
         const set = new Set<string>();
-        allCategories.forEach((c) => set.add(c));
+        allCategories.forEach((c) => {
+            const name = typeof c === "string" ? c : c.name;
+            if (name) set.add(name);
+        });
         normalizedProducts.forEach((p) => {
             if (p.primaryCategory) set.add(p.primaryCategory);
         });
@@ -177,6 +317,9 @@ export function ProductPageClient({
                             c.toLowerCase() ||
                         product.category?.some(
                             (pc) => pc.toLowerCase() === c.toLowerCase(),
+                        ) ||
+                        product.tags?.some(
+                            (t) => t.toLowerCase() === c.toLowerCase(),
                         ),
                 );
                 if (!matchCat) return false;
@@ -275,21 +418,46 @@ export function ProductPageClient({
     }, [filteredProducts, filterState.sortBy]);
 
     // Pagination calculations
-    const totalCount = sortedProducts.length;
-    const totalPages = Math.ceil(totalCount / filterState.pageSize);
+    const effectiveTotalCount =
+        totalCount > 0 ? totalCount : sortedProducts.length;
+    const totalPages = Math.max(
+        1,
+        Math.ceil(effectiveTotalCount / filterState.pageSize),
+    );
     const startIndex =
-        totalCount === 0
+        effectiveTotalCount === 0
             ? 0
             : (filterState.page - 1) * filterState.pageSize + 1;
     const endIndex = Math.min(
         filterState.page * filterState.pageSize,
-        totalCount,
+        effectiveTotalCount,
     );
 
     const paginatedProducts = useMemo(() => {
+        // If the server already returned paginated results (e.g. at most pageSize items)
+        if (normalizedProducts.length <= filterState.pageSize) {
+            return sortedProducts;
+        }
+        // Fallback for full client-side dataset
         const start = (filterState.page - 1) * filterState.pageSize;
         return sortedProducts.slice(start, start + filterState.pageSize);
-    }, [sortedProducts, filterState.page, filterState.pageSize]);
+    }, [sortedProducts, normalizedProducts.length, filterState.page, filterState.pageSize]);
+
+    const handlePageChange = (newPage: number) => {
+        setFilterState((prev) => ({ ...prev, page: newPage }));
+        const params = new URLSearchParams(
+            searchParams ? searchParams.toString() : "",
+        );
+        if (newPage <= 1) {
+            params.delete("page");
+        } else {
+            params.set("page", newPage.toString());
+        }
+        const qs = params.toString();
+        startTransition(() => {
+            router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: true });
+        });
+    };
 
     const handleOpenQuickView = (p: DisplayProduct) => {
         setQuickViewProduct(p);
@@ -316,7 +484,7 @@ export function ProductPageClient({
     const handleResetPrice = () => {
         setFilterState((prev) => ({
             ...prev,
-            priceRange: [0, 300],
+            priceRange: [0, 1000],
             page: 1,
         }));
     };
@@ -350,7 +518,7 @@ export function ProductPageClient({
             ...prev,
             categories: [],
             skinTypes: [],
-            priceRange: [0, 300],
+            priceRange: [0, 1000],
             ratings: [],
             promotions: [],
             availability: [],
@@ -359,7 +527,7 @@ export function ProductPageClient({
     };
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-400">
+        <div className="container mx-auto px-6 py-8 max-w-400">
             {/* Mobile Filter Button */}
             <div className="lg:hidden mb-4 flex items-center justify-between">
                 <Sheet
@@ -370,7 +538,7 @@ export function ProductPageClient({
                         <Button
                             variant="outline"
                             size="sm"
-                            className="gap-2 rounded-xl border-stone-300 text-stone-800"
+                            className="gap-2 rounded-xl border-stone-300 dark:border-stone-700 text-stone-800 dark:text-stone-200 dark:bg-card"
                         >
                             <SlidersHorizontal className="h-4 w-4" /> Filter
                             Options
@@ -386,6 +554,9 @@ export function ProductPageClient({
                         <ProductFilterSidebar
                             filterState={filterState}
                             availableCategories={availableCategories}
+                            categoryCounts={categoryCountsMap}
+                            totalDbCount={effectiveTotalCount}
+                            products={normalizedProducts}
                             onFilterChange={setFilterState}
                         />
                     </SheetContent>
@@ -399,6 +570,9 @@ export function ProductPageClient({
                     <ProductFilterSidebar
                         filterState={filterState}
                         availableCategories={availableCategories}
+                        categoryCounts={categoryCountsMap}
+                        totalDbCount={effectiveTotalCount}
+                        products={normalizedProducts}
                         onFilterChange={setFilterState}
                     />
                 </div>
@@ -407,7 +581,7 @@ export function ProductPageClient({
                 <div className="lg:col-span-5 space-y-2">
                     {/* Top Bar: Results Count + Sort Select */}
                     <ProductSortSelect
-                        totalCount={totalCount}
+                        totalCount={effectiveTotalCount}
                         startIndex={startIndex}
                         endIndex={endIndex}
                         sortBy={filterState.sortBy}
@@ -433,7 +607,26 @@ export function ProductPageClient({
                     />
 
                     {/* Products Grid */}
-                    {paginatedProducts.length > 0 ? (
+                    {isPending ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 pt-2">
+                            {Array.from({ length: 8 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex flex-col justify-between rounded-3xl bg-white dark:bg-card p-3 border border-stone-200/80 dark:border-stone-800 animate-pulse space-y-3"
+                                >
+                                    <div className="aspect-[4/5] w-full rounded-2xl bg-stone-200 dark:bg-stone-800" />
+                                    <div className="space-y-2 px-1 pb-1">
+                                        <div className="flex justify-between items-center">
+                                            <div className="h-3 w-16 rounded bg-stone-200 dark:bg-stone-800" />
+                                            <div className="h-3 w-10 rounded bg-stone-200 dark:bg-stone-800" />
+                                        </div>
+                                        <div className="h-4 w-3/4 rounded bg-stone-200 dark:bg-stone-800" />
+                                        <div className="h-4 w-1/3 rounded bg-stone-200 dark:bg-stone-800" />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : paginatedProducts.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 pt-2">
                             {paginatedProducts.map((product) => (
                                 <ProductCard
@@ -444,18 +637,18 @@ export function ProductPageClient({
                             ))}
                         </div>
                     ) : (
-                        <div className="flex flex-col items-center justify-center py-24 text-center rounded-3xl bg-[#F6F5F1] p-8 mt-4">
-                            <Filter className="h-12 w-12 text-stone-400 mb-3" />
-                            <h3 className="text-lg font-bold text-stone-800">
+                        <div className="flex flex-col items-center justify-center py-24 text-center rounded-3xl bg-[#F6F5F1] dark:bg-card dark:border dark:border-border/60 p-8 mt-4">
+                            <Filter className="h-12 w-12 text-stone-400 dark:text-stone-500 mb-3" />
+                            <h3 className="text-lg font-bold text-stone-800 dark:text-stone-100">
                                 No products match your filter
                             </h3>
-                            <p className="text-sm text-stone-500 mt-1 max-w-sm">
+                            <p className="text-sm text-stone-500 dark:text-stone-400 mt-1 max-w-sm">
                                 Try adjusting your category, price range, or
                                 clearing filters to see more results.
                             </p>
                             <Button
                                 onClick={handleClearAll}
-                                className="mt-5 rounded-full bg-[#203D30] text-white hover:bg-[#193227] px-6"
+                                className="mt-5 rounded-full bg-[#203D30] dark:bg-emerald-700 text-white hover:bg-[#193227] dark:hover:bg-emerald-600 px-6"
                             >
                                 Reset All Filters
                             </Button>
@@ -466,9 +659,7 @@ export function ProductPageClient({
                     <ProductPagination
                         currentPage={filterState.page}
                         totalPages={totalPages}
-                        onPageChange={(page) =>
-                            setFilterState((prev) => ({ ...prev, page }))
-                        }
+                        onPageChange={handlePageChange}
                     />
                 </div>
             </div>

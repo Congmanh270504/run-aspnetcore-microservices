@@ -52,7 +52,7 @@ export function ProductPagination({
                 type="button"
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage <= 1}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-stone-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 dark:text-stone-300 transition-colors hover:bg-stone-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent"
                 aria-label="Previous page"
             >
                 <ChevronLeft className="h-4 w-4" />
@@ -65,7 +65,7 @@ export function ProductPagination({
                         return (
                             <span
                                 key={`ellipsis-${idx}`}
-                                className="px-1 text-stone-400 select-none"
+                                className="px-1 text-stone-400 dark:text-stone-500 select-none"
                             >
                                 ...
                             </span>
@@ -82,8 +82,8 @@ export function ProductPagination({
                             onClick={() => onPageChange(pageNumber)}
                             className={`flex h-8 w-8 items-center justify-center rounded-full transition-all text-xs font-semibold ${
                                 isActive
-                                    ? "bg-[#203D30] text-white shadow-sm"
-                                    : "text-stone-700 hover:bg-stone-100"
+                                    ? "bg-[#203D30] dark:bg-emerald-700 text-white shadow-sm"
+                                    : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-slate-800"
                             }`}
                         >
                             {pageNumber}
@@ -97,7 +97,7 @@ export function ProductPagination({
                 type="button"
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage >= totalPages}
-                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 transition-colors hover:bg-stone-100 disabled:opacity-30 disabled:hover:bg-transparent"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone-600 dark:text-stone-300 transition-colors hover:bg-stone-100 dark:hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-transparent"
                 aria-label="Next page"
             >
                 <ChevronRight className="h-4 w-4" />

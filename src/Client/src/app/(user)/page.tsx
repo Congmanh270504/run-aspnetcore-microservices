@@ -9,15 +9,38 @@ import FAQ from "@/components/landing/FAQ";
 import Testimonials from "@/components/landing/Testimonials";
 import CTABanner from "@/components/landing/CTABanner";
 import { getProducts } from "@/features/(admin)/products/actions/catalogActions";
+import { getDiscounts } from "@/features/(admin)/discounts/actions/discountActions";
 
 export const revalidate = 0; // Dynamic server rendering
 
 export default async function HomePage() {
-    const products = await getProducts(1, 20);
+    const [products, discounts] = await Promise.all([
+        getProducts(1, 20),
+        getDiscounts().catch(() => []),
+    ]);
 
-    const topProduct = products[0];
-    const latestProducts = products.slice(0, 4);
-    const bestProducts = products.length > 4 ? products.slice(-4) : products;
+    const discountsMap = new Map<string, number>();
+    discounts.forEach((d) => {
+        if (d.productName) {
+            discountsMap.set(d.productName.toLowerCase(), d.amount);
+        }
+    });
+
+    const productsWithDiscounts = products.map((p) => {
+        const name = (p.name || p.title || "").toLowerCase();
+        const discountAmount = discountsMap.get(name);
+        if (discountAmount !== undefined) {
+            return { ...p, discount: discountAmount };
+        }
+        return p;
+    });
+
+    const topProduct = productsWithDiscounts[0];
+    const latestProducts = productsWithDiscounts.slice(0, 4);
+    const bestProducts =
+        productsWithDiscounts.length > 4
+            ? productsWithDiscounts.slice(-4)
+            : productsWithDiscounts;
 
     return (
         <div className="space-y-12 pb-12">

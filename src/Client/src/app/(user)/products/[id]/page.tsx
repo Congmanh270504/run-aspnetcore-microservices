@@ -1,10 +1,14 @@
-import React from "react";
-import Link from "next/link";
+import React, { Suspense } from "react";
 import { notFound } from "next/navigation";
-import { ProductDetailClient } from "@/components/product/ProductDetailClient";
-import { ChevronRight, ArrowLeft } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ProductDetailClient } from "@/features/(users)/products/components/ProductDetailClient";
+import { ProductDetailSkeleton } from "@/features/(users)/products/components/ProductDetailSkeleton";
+import {
+    getUserProductById,
+    getUserProducts,
+    getProductColorVariants,
+} from "@/features/(users)/products/actions/productActions";
 import { getProductById } from "@/features/(admin)/products/actions/catalogActions";
+import { getDiscountByProductName } from "@/features/(admin)/discounts/actions/discountActions";
 
 export const revalidate = 0;
 
@@ -14,57 +18,102 @@ interface Props {
     };
 }
 
-export default async function ProductDetailPage({ params }: Props) {
-    const product = await getProductById(params.id);
+async function ProductDetailContent({ id }: { id: string }) {
+    const product =
+        (await getUserProductById(id).catch(() => null)) ||
+        (await getProductById(id).catch(() => null));
 
     if (!product) {
         notFound();
     }
 
-    const imageUrl = product.imageFile
-        ? `/images/product/${product.imageFile}`
-        : "/images/placeholder.png";
+    const coupon = await getDiscountByProductName(
+        product.name || product.title || "",
+    ).catch(() => null);
+    if (coupon && coupon.amount > 0) {
+        product.discount = coupon.amount;
+    }
+
+    // Fetch up to 10 products with the same product_type as current product
+    const allProducts = await getUserProducts(1, 100).catch(() => []);
+    const currentProductType =
+        (typeof product.product_type === "string" && product.product_type) ||
+        (typeof product.productType === "string" && product.productType) ||
+        (Array.isArray(product.category) && product.category[0]) ||
+        "";
+
+    let matchingProducts = allProducts.filter((p) => {
+        if (p.id === product.id) return false;
+        const pType =
+            (typeof p.product_type === "string" && p.product_type) ||
+            (typeof p.productType === "string" && p.productType) ||
+            (Array.isArray(p.category) && p.category[0]) ||
+            "";
+        return (
+            currentProductType &&
+            pType &&
+            pType.trim().toLowerCase() === currentProductType.trim().toLowerCase()
+        );
+    });
+
+    if (matchingProducts.length < 10) {
+        const others = allProducts.filter(
+            (p) =>
+                p.id !== product.id &&
+                !matchingProducts.some((m) => m.id === p.id),
+        );
+        matchingProducts = [...matchingProducts, ...others].slice(0, 10);
+    } else {
+        matchingProducts = matchingProducts.slice(0, 10);
+    }
+
+    const currentTitle = product.name || product.title || "";
+    let colorVariants = await getProductColorVariants(
+        currentTitle,
+        product.id,
+    ).catch(() => []);
+
+    if (colorVariants.length <= 1 && currentTitle) {
+        const lastDash = currentTitle.lastIndexOf("-");
+        if (lastDash !== -1) {
+            const baseTitle = currentTitle
+                .substring(0, lastDash)
+                .trim()
+                .toLowerCase();
+            const localMatches = allProducts.filter((p) => {
+                const pTitle = (p.name || p.title || "").toLowerCase();
+                const pDash = pTitle.lastIndexOf("-");
+                if (pDash === -1) return false;
+                return pTitle.substring(0, pDash).trim() === baseTitle;
+            });
+            if (localMatches.length > 0) {
+                if (!localMatches.some((m) => m.id === product.id)) {
+                    localMatches.push(product);
+                }
+                colorVariants = localMatches;
+            }
+        }
+    }
+
+    if (colorVariants.length === 0) {
+        colorVariants = [product];
+    }
 
     return (
-        <div className="container py-8 space-y-8">
-            {/* Breadcrumb Navigation */}
-            <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Link href="/" className="hover:text-foreground">
-                    Home
-                </Link>
-                <ChevronRight className="h-4 w-4" />
-                <Link href="/products" className="hover:text-foreground">
-                    Products
-                </Link>
-                <ChevronRight className="h-4 w-4" />
-                <span className="text-foreground font-semibold truncate max-w-xs">
-                    {product.name}
-                </span>
-            </nav>
+        <ProductDetailClient
+            product={product}
+            popularProducts={matchingProducts}
+            colorVariants={colorVariants}
+        />
+    );
+}
 
-            <Link
-                href="/products"
-                className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-            >
-                <ArrowLeft className="h-3.5 w-3.5" /> Back to Products
-            </Link>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-                {/* Product Image Gallery */}
-                <div className="lg:col-span-6 rounded-2xl border bg-slate-50/50 p-8 flex items-center justify-center min-h-[420px] shadow-sm">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                        src={imageUrl}
-                        alt={product.name}
-                        className="max-h-[380px] w-auto object-contain transition-transform duration-300 hover:scale-105"
-                    />
-                </div>
-
-                {/* Product Details Form */}
-                <div className="lg:col-span-6">
-                    <ProductDetailClient product={product} />
-                </div>
-            </div>
+export default function ProductDetailPage({ params }: Props) {
+    return (
+        <div className="container p-8 space-y-6">
+            <Suspense fallback={<ProductDetailSkeleton />}>
+                <ProductDetailContent id={params.id} />
+            </Suspense>
         </div>
     );
 }

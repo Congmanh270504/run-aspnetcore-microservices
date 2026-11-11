@@ -48,7 +48,7 @@ function getStatusBadge(
     } else {
         return (
             <Badge className="bg-emerald-100 text-emerald-800 border-emerald-300 font-semibold px-2.5 py-0.5">
-                Đang hiệu lực
+                Active
             </Badge>
         );
     }
@@ -60,13 +60,20 @@ export function createColumns(
 ): ColumnDef<Coupon>[] {
     return [
         {
-            accessorKey: "id",
-            header: "ID",
-            cell: ({ row }) => (
-                <span className="font-mono text-xs text-muted-foreground">
-                    {row.original.id}
-                </span>
-            ),
+            id: "stt",
+            header: () => <div className="text-center">Index</div>,
+            cell: ({ row, table }) => {
+                const pageIndex = table.getState().pagination?.pageIndex ?? 0;
+                const pageSize = table.getState().pagination?.pageSize ?? 0;
+                const rowIndex = table.getRowModel().rows.indexOf(row);
+                return (
+                    <div className="text-center text-xs text-muted-foreground">
+                        {rowIndex !== -1
+                            ? pageIndex * pageSize + rowIndex + 1
+                            : row.index + 1}
+                    </div>
+                );
+            },
         },
         {
             accessorKey: "productName",

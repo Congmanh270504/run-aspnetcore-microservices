@@ -85,6 +85,8 @@ interface DataTableProps<TData, TValue> {
     cardView?: (table: ReactTableInstance<TData>) => React.ReactNode;
     renderRowExpansion?: (row: TData) => React.ReactNode;
     enableRowSelection?: boolean;
+    rowSelection?: RowSelectionState;
+    onRowSelectionChange?: React.Dispatch<React.SetStateAction<RowSelectionState>> | ((updater: RowSelectionState | ((old: RowSelectionState) => RowSelectionState)) => void);
     hideDataArea?: boolean;
     clientPagination?: boolean;
     initialPageSize?: number;
@@ -160,6 +162,8 @@ function DataTableContent<TData, TValue>({
     cardView,
     renderRowExpansion,
     enableRowSelection = false,
+    rowSelection: controlledRowSelection,
+    onRowSelectionChange: controlledOnRowSelectionChange,
     hideDataArea = false,
     clientPagination = false,
     initialPageSize = 20,
@@ -177,7 +181,13 @@ function DataTableContent<TData, TValue>({
     const [searchInputValue, setSearchInputValue] = useState(
         searchValue ?? globalFilter,
     );
-    const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+    const [internalRowSelection, setInternalRowSelection] = useState<RowSelectionState>({});
+    const isControlledRowSelection = controlledRowSelection !== undefined;
+    const rowSelection = isControlledRowSelection
+        ? controlledRowSelection
+        : internalRowSelection;
+    const handleRowSelectionChange =
+        controlledOnRowSelectionChange ?? setInternalRowSelection;
     const [clientPaginationState, setClientPaginationState] =
         useState<PaginationState>({
             pageIndex: 0,
@@ -252,9 +262,10 @@ function DataTableContent<TData, TValue>({
 
     React.useEffect(() => {
         if (!enableRowSelection) return;
+        if (isControlledRowSelection) return;
 
-        setRowSelection({});
-    }, [data, enableRowSelection]);
+        setInternalRowSelection({});
+    }, [data, enableRowSelection, isControlledRowSelection]);
 
     const table = useReactTable({
         data,
@@ -272,7 +283,7 @@ function DataTableContent<TData, TValue>({
         onPaginationChange: clientPagination
             ? setClientPaginationState
             : undefined,
-        onRowSelectionChange: enableRowSelection ? setRowSelection : undefined,
+        onRowSelectionChange: enableRowSelection ? handleRowSelectionChange : undefined,
         globalFilterFn: enableClientGlobalFilter ? globalFilterFn : undefined,
         enableRowSelection,
         state: {

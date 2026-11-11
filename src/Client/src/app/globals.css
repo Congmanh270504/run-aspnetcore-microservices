@@ -157,6 +157,11 @@
     --breakpoint-xs: 23.4375rem;
     --breakpoint-3xl: 100rem;
     --breakpoint-4xl: 120rem;
+    --font-serif: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-playfair: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-jost: var(--font-jost), "Jost", system-ui, sans-serif;
+    --tracking-luxury: 0.24em;
+    --tracking-subtle: 0.04em;
 }
 
 :root {
@@ -193,6 +198,8 @@
     --sidebar-ring: oklch(0.708 0 0);
 
     --font-sans: var(--font-roboto), "Roboto", sans-serif;
+    --font-serif-luxury: var(--font-playfair), "Playfair Display", Georgia, "Times New Roman", serif;
+    --font-sans-ui: var(--font-jost), "Jost", system-ui, -apple-system, sans-serif;
 }
 
 /* Theme Presets - Light Mode */
@@ -387,6 +394,30 @@
     --font-sans: "Plus Jakarta Sans", sans-serif;
 }
 
+[data-font="playfair"] {
+    --font-sans: var(--font-serif-luxury);
+}
+
+/* Typography Utility Classes */
+.font-playfair {
+    font-family: var(--font-serif-luxury);
+}
+
+.luxury-heading-italic {
+    font-family: var(--font-serif-luxury);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+}
+
+.luxury-button-label {
+    font-family: var(--font-sans-ui);
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    font-size: 0.75rem; /* 12px */
+    font-weight: 500;
+}
+
 .dark {
     --background: oklch(0.141 0.005 285.823);
     --foreground: oklch(0.985 0 0);
@@ -422,14 +453,14 @@
     }
 
     html {
-        overflow-x: hidden;
+        overflow-x: clip;
     }
 
     body {
         @apply bg-background text-foreground;
         font-family: var(--font-sans);
         -webkit-font-smoothing: antialiased;
-        overflow-x: hidden;
+        overflow-x: clip;
     }
 }
 
@@ -577,6 +608,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
         from {
             transform: translateX(0);
         }
+
         to {
             transform: translateX(calc(-100% - var(--gap, 1rem)));
         }
@@ -586,6 +618,7 @@ input[type="time"]::-webkit-calendar-picker-indicator:hover {
         from {
             transform: translateY(0);
         }
+
         to {
             transform: translateY(calc(-100% - var(--gap, 1rem)));
         }
@@ -612,3 +645,128 @@ body.no-scrollbar::-webkit-scrollbar,
     /* Older Safari and Chromium */
 }
 
+
+html.none-scrollbar,
+body.none-scrollbar,
+.none-scrollbar {
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   Swipe Action Buttons (btn-0, btn-1, etc.)
+   ========================================================================== */
+[class^="btn-"],
+[class*=" btn-"] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    width: 100%;
+    height: 50px;
+    line-height: normal;
+    margin: 1rem auto;
+    text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    font-size: 14px;
+    border: 1px solid currentColor;
+    box-sizing: border-box;
+    cursor: pointer;
+    z-index: 1;
+    transition: color 0.5s ease-in-out, border-color 0.5s ease-in-out;
+}
+
+[class^="btn-"]>*,
+[class*=" btn-"]>* {
+    position: relative;
+    z-index: 1;
+}
+
+[class^="btn-"]:before,
+[class^="btn-"]:after,
+[class*=" btn-"]:before,
+[class*=" btn-"]:after {
+    box-sizing: border-box;
+    z-index: 0;
+    transition: transform 0.5s ease-in-out;
+}
+
+/* btn-0: Straight Horizontal Swipe */
+.btn-0 {
+    --btn-color: #18181b;
+    --btn-bg: #18181b;
+    color: var(--btn-color);
+    background-color: transparent;
+}
+
+.dark .btn-0 {
+    --btn-color: #f4f4f5;
+    --btn-bg: #f4f4f5;
+    color: var(--btn-color);
+}
+
+.btn-0:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    background-color: var(--btn-bg);
+    transform: translateX(-100%);
+    pointer-events: none;
+}
+
+.btn-0:hover {
+    color: #ffffff;
+}
+
+.dark .btn-0:hover {
+    color: #18181b;
+}
+
+.btn-0:hover:before {
+    transform: translateX(0);
+}
+
+/* btn-1: Diagonal Swipe */
+.btn-1 {
+    --btn-color: #18181b;
+    --btn-bg: #18181b;
+    color: var(--btn-color);
+    background-color: transparent;
+}
+
+.dark .btn-1 {
+    --btn-color: #f4f4f5;
+    --btn-bg: #f4f4f5;
+    color: var(--btn-color);
+}
+
+.btn-1:before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% + 50px);
+    height: 100%;
+    background-color: var(--btn-bg);
+    clip-path: polygon(0 0, calc(100% - 50px) 0, 100% 100%, 0 100%);
+    transform: translateX(-100%);
+    pointer-events: none;
+}
+
+.btn-1:hover {
+    color: #ffffff;
+}
+
+.dark .btn-1:hover {
+    color: #18181b;
+}
+
+.btn-1:hover:before {
+    transform: translateX(0);
+}

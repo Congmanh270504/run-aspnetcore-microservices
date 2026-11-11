@@ -28,17 +28,17 @@ export function ProductSortSelect({
     return (
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 py-2">
             {/* Showing Count */}
-            <div className="text-sm text-stone-600">
+            <div className="text-sm text-stone-600 dark:text-stone-400">
                 {totalCount === 0 ? (
                     "No results found"
                 ) : (
                     <>
                         Showing{" "}
-                        <span className="font-semibold text-stone-900">
+                        <span className="font-semibold text-stone-900 dark:text-stone-100">
                             {startIndex}-{endIndex}
                         </span>{" "}
                         of{" "}
-                        <span className="font-semibold text-stone-900">
+                        <span className="font-semibold text-stone-900 dark:text-stone-100">
                             {totalCount}
                         </span>{" "}
                         results
@@ -48,21 +48,27 @@ export function ProductSortSelect({
 
             {/* Sort Dropdown */}
             <div className="flex items-center gap-2 self-end sm:self-auto">
-                <span className="text-sm text-stone-600 shrink-0">Sort by :</span>
+                <span className="text-sm text-stone-600 dark:text-stone-400 shrink-0">
+                    Sort by :
+                </span>
                 <Select
                     value={sortBy}
                     onValueChange={(val) => onSortChange(val as SortOption)}
                 >
-                    <SelectTrigger className="h-9 w-[170px] rounded-lg border-stone-200 bg-white text-xs font-medium text-stone-800 shadow-xs focus:ring-1 focus:ring-[#203D30]">
+                    <SelectTrigger className="h-9 w-[170px] rounded-lg border-stone-200 dark:border-stone-700 bg-white dark:bg-card text-xs font-medium text-stone-800 dark:text-stone-100 shadow-xs focus:ring-1 focus:ring-[#203D30] dark:focus:ring-emerald-500">
                         <SelectValue placeholder="Default Sorting" />
                     </SelectTrigger>
-                    <SelectContent className="text-xs">
+                    <SelectContent className="text-xs dark:bg-card dark:border-stone-700 dark:text-stone-100">
                         <SelectItem value="default">Default Sorting</SelectItem>
                         <SelectItem value="bestseller">Best Seller</SelectItem>
                         <SelectItem value="rating">Average Rating</SelectItem>
                         <SelectItem value="newest">New Arrivals</SelectItem>
-                        <SelectItem value="price-low">Price: Low to High</SelectItem>
-                        <SelectItem value="price-high">Price: High to Low</SelectItem>
+                        <SelectItem value="price-low">
+                            Price: Low to High
+                        </SelectItem>
+                        <SelectItem value="price-high">
+                            Price: High to Low
+                        </SelectItem>
                     </SelectContent>
                 </Select>
             </div>

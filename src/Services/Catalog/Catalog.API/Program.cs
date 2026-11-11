@@ -26,6 +26,20 @@ builder.Services.AddHealthChecks()
 
 var app = builder.Build();
 
+// Run standalone seed script if requested via CLI
+if (args.Any(a => a.Equals("--seed", StringComparison.OrdinalIgnoreCase) ||
+                  a.Equals("--seed-data2", StringComparison.OrdinalIgnoreCase) ||
+                  a.Equals("-s", StringComparison.OrdinalIgnoreCase)))
+{
+    var targetFile = args.FirstOrDefault(a => a.EndsWith(".json", StringComparison.OrdinalIgnoreCase)) ?? "data2.json";
+    using var scope = app.Services.CreateScope();
+    var catalogContext = scope.ServiceProvider.GetRequiredService<ICatalogContext>();
+    Console.WriteLine($"==> Running Catalog Seeding Script (Target: {targetFile}) <==");
+    await CatalogInitialData.SeedAsync(catalogContext, targetFileName: targetFile, force: true);
+    Console.WriteLine("==> Seeding process completed successfully. Exiting. <==");
+    return;
+}
+
 // Seed initial data in Development
 if (app.Environment.IsDevelopment())
 {

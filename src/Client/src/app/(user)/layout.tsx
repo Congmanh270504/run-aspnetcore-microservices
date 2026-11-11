@@ -12,7 +12,7 @@ export default function UserLayout({
     return (
         <TooltipProvider>
             <CartProvider>
-                <div className="min-h-screen flex flex-col bg-background text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
+                <div className="min-h-screen bg-[#FAF9F6] flex flex-col  text-foreground antialiased selection:bg-primary selection:text-primary-foreground">
                     <Navbar />
                     <main className="flex-1 pt-16 xs:pt-20">{children}</main>
                     <Footer />

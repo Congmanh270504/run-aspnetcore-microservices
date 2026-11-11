@@ -1,12 +1,15 @@
 # Stage 1: Install dependencies
 FROM node:20-alpine AS deps
+RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
-COPY Client/package*.json ./
-RUN npm config set fetch-retry-maxtimeout 120000 \
- && npm config set fetch-retry-mintimeout 20000 \
- && npm config set fetch-retries 5 \
- && (npm ci --legacy-peer-deps || npm install --legacy-peer-deps)
+# Enable corepack and pnpm
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+COPY Client/.npmrc* Client/package.json Client/pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Stage 2: Rebuild source code
 FROM node:20-alpine AS builder
@@ -18,7 +21,11 @@ COPY Client/ .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
-RUN npm run build
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+RUN pnpm run build
 
 # Stage 3: Production runner
 FROM node:20-alpine AS runner
@@ -42,4 +49,3 @@ USER nextjs
 EXPOSE 3000
 
 CMD ["node", "server.js"]
-
