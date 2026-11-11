@@ -25,8 +25,7 @@ public class CatalogContext : ICatalogContext
 
     public CatalogContext(IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("Database")
-            ?? "mongodb://localhost:27017/CatalogDb";
+        var connectionString = GetConnectionString(configuration);
 
         var mongoUrl = new MongoUrl(connectionString);
         var client = new MongoClient(mongoUrl);
@@ -38,6 +37,50 @@ public class CatalogContext : ICatalogContext
         ProductTypes = database.GetCollection<ProductTypeItem>("ProductTypes");
 
         CreateIndexes();
+    }
+
+    public static string GetConnectionString(IConfiguration configuration)
+    {
+        var conn = configuration.GetConnectionString("Database");
+        if (string.IsNullOrWhiteSpace(conn) || conn == "CATALOG_DB_CONN" || conn == "${CATALOG_DB_CONN}")
+        {
+            conn = configuration["CATALOG_DB_CONN"]
+                ?? Environment.GetEnvironmentVariable("CATALOG_DB_CONN")
+                ?? TryReadFromDotEnv("CATALOG_DB_CONN")
+                ?? "mongodb://localhost:27017/CatalogDb";
+        }
+        return conn;
+    }
+
+    private static string? TryReadFromDotEnv(string key)
+    {
+        try
+        {
+            var dir = new DirectoryInfo(Directory.GetCurrentDirectory());
+            while (dir != null)
+            {
+                var envPath = Path.Combine(dir.FullName, ".env");
+                if (File.Exists(envPath))
+                {
+                    foreach (var line in File.ReadAllLines(envPath))
+                    {
+                        var trimmed = line.Trim();
+                        if (trimmed.StartsWith('#') || !trimmed.Contains('=')) continue;
+                        var parts = trimmed.Split('=', 2);
+                        if (parts[0].Trim().Equals(key, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return parts[1].Trim();
+                        }
+                    }
+                }
+                dir = dir.Parent;
+            }
+        }
+        catch
+        {
+            // Ignore any file access errors
+        }
+        return null;
     }
 
     private void CreateIndexes()

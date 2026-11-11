@@ -19,8 +19,7 @@ builder.Services.AddSingleton<ICatalogContext, CatalogContext>();
 
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
-var mongoConn = builder.Configuration.GetConnectionString("Database")
-    ?? "mongodb://localhost:27017/CatalogDb";
+var mongoConn = CatalogContext.GetConnectionString(builder.Configuration);
 builder.Services.AddHealthChecks()
     .AddMongoDb(mongoConn);
 
